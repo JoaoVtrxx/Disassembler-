@@ -1,5 +1,5 @@
 .data 
-	codigo: .word 0x00021682
+	codigo: .word 0x040216CD
 	stringNaoAchouFuncao: .asciiz "Funcao nao encontrada... "
 	
 	string1: .asciiz "Opcode: "
@@ -86,7 +86,7 @@
 		syscall
 
 	main:
-		addi $sp, $sp, -24
+		addi $sp, $sp, -4
 		#PASSANDO CODIGO PARA REGISTRADOR $a1
 		lw  $a1, codigo
 
@@ -188,7 +188,8 @@
 		j while2
 
 	VetorTipoJ:
-	
+		addi $sp, $sp, -4
+
 		la $t0, vetor_ponteiros # $t0 <- endere?o base do vetor de ponteiros para strings
 		sub $a2, $a2, 1
 		sll $a2, $a2, 2
@@ -204,7 +205,9 @@
 		j imprimeResultJ
 
 	VetorTipoI:
-	
+		lw $s1, 0($sp)      #$S1 = VALOR DO OPCODE
+		addi $sp, $sp, -12
+
 		la $t0, vetor_ponteiros # $t0 <- endere?o base do vetor de ponteiros para strings
 		sub $a2, $a2, 1
 		sll $a2, $a2, 2
@@ -230,42 +233,88 @@
 		jal traduzRegistradorRS
 		jal traduzRegistradorRT
 
-		j imprimeResultI
+		addi $s0, $zero, 1 # $S0 = 1
+		beq $s1, $s0, imprimeResultI1 #IF($S1 == 1){}
+
+		addi $s0, $zero, 6 # $S0 = 6
+		blt $s1, $s0, imprimeResultI2 #IF($S1 < 6){}
+
+		addi $s0, $zero, 8 # $S0 = 8
+		blt $s1, $s0, imprimeResultI1 #IF($S1 < 8){}
+
+		addi $s0, $zero, 0x0F # $S0 = 0x0F
+		blt $s1, $s0, imprimeResultI3 #IF($S1 < 0x0F){}
+
+		addi $s0, $zero, 0x3A # $S0 = 0x3A
+		blt $s1, $s0, imprimeResultR4 #IF($S1 < 0x3A){}
+
+		j finit
 
 	VetorTipoR:
-	
-		la $t0, vetor_functions # $t0 <- endereco base do vetor de ponteiros para strings
-		sll $a2, $a2, 2
-		add $t0, $a2, $t0 # t0 <- &array[i]
+		lw $s1, 0($sp)      #$S1 = VALOR DE FUNCTION
+		addi $sp, $sp, -16 # AJUSTA A PILHA
+
+		la $t0, vetor_functions # $t0 <- ENDERECO BASE DO VETOR FUNCTIONS
+		sll $a2, $a2, 2     # MULTIPLICA INDICE DO VETOR POR 4
+		add $t0, $a2, $t0 # $T0 <- &VETOR[i]
 		
-		sw $t0, 0($sp)  
+		sw $t0, 0($sp)  # guarda a string de function
 
 		#PEGAR RS
-		jal pega_rs
-		move $t0, $v0
-		sw $t0, 4($sp)
+		jal pega_rs   
+		move $t0, $v0  # RECEBE O VALOR DE RS
+		sw $t0, 4($sp) # GUARDA RS NA PILHA
     
 		#PEGAR RT
 		jal pega_rt
-		move $t0, $v0
-		sw $t0, 8($sp)
+		move $t0, $v0 # RECEBE O VALOR DE RT
+		sw $t0, 8($sp)  # GUARDA RT NA PILHA
 	
 		#PEGAR RD
         jal pega_rd
-		move $t0, $v0
-		sw $t0, 12($sp)
+		move $t0, $v0 # RECEBE O VALOR DE RD
+		sw $t0, 12($sp)  # GUARDA RD NA PILHA
 	
 		#PEGAR SA
-		jal pega_sa
-		move $t0, $v0
-		sw $t0, 16($sp)
+		jal pega_sa 
+		move $t0, $v0  # RECEBE O VALOR DE SA
+		sw $t0, 16($sp)  # GUARDA SA NA PILHA
         
 		jal traduzRegistradorRS
 		jal traduzRegistradorRT
 		jal traduzRegistradorRD
 
-		j imprimeResultR
+		addi $s0, $zero, 4 # $S0 = 4
+		blt $s1, $s0, imprimeResultR1 #IF($S1 < 4){}
 
+		addi $s0, $zero, 8 # $S0 = 8
+		blt $s1, $s0, imprimeResultR2 #IF($S1 < 8){}
+
+		beq $s1, $s0, imprimeResultR3 #IF($S1 == 8){}
+
+		addi $s0, $zero, 9 # $S0 = 9
+		beq $s1, $s0, imprimeResultR4 #IF($S1 == 9){}
+
+		addi $s0, $zero, 0x10 # $S0 = 0x10
+		blt $s1, $s0, imprimeResultR5 #IF($S1 < 0x10){}
+
+		addi $s0, $zero, 0x10 # $S0 = 0x10
+		beq $s1, $s0, imprimeResultR6 #IF($S1 == 0x10){}
+		addi $s0, $zero, 0x12 # $S0 = 0x12
+		beq $s1, $s0, imprimeResultR6 #IF($S1 == 0x12){}
+
+		addi $s0, $zero, 0x11 # $S0 = 0x11
+		beq $s1, $s0, imprimeResultR3 #IF($S1 == 0x11){}
+		addi $s0, $zero, 0x13 # $S0 = 0x13
+		beq $s1, $s0, imprimeResultR3 #IF($S1 == 0x13){}
+
+		addi $s0, $zero, 0x20 # $S0 = 0x20
+		blt $s1, $s0, imprimeResultR7 #IF($S1 < 0x20){}
+		
+		addi $s0, $zero, 0x2C # $S0 = 0x2C
+		blt $s1, $s0, imprimeResultR8 #IF($S1 < 0x2C){}
+
+		j finit
 	traduzRegistradorRS:
 		lw $t0, 4($sp) 
 
@@ -333,7 +382,35 @@
 	
 	
 
-	imprimeResultR: 
+	imprimeResultR1: 
+	
+		#IMPRIME INSTRUCAO
+		lw $t0, 0($sp)
+		lw $a0, ($t0)  
+		li $v0, PRINT_STRING
+		syscall
+		
+		#IMPRIME RD 	
+		lw $t0, 12($sp)
+		lw $a0, ($t0) 
+		li $v0, PRINT_STRING
+		syscall
+
+		#IMPRIME RT	
+		lw $t0, 8($sp)
+		lw $a0, ($t0)  
+		li $v0, PRINT_STRING
+		syscall	
+		
+		#IMPRIME SA	
+		lw $a0, 16($sp)  
+		li $v0, 34
+		syscall
+		
+		addi $sp, $sp, 20
+		j finit
+
+	imprimeResultR2: 
 	
 		#IMPRIME INSTRUCAO
 		lw $t0, 0($sp)
@@ -358,15 +435,142 @@
 		lw $a0, ($t0)  
 		li $v0, PRINT_STRING
 		syscall	
+
+		j finit
 		
-		#IMPRIME SA	
-		lw $a0, 16($sp)  
+	imprimeResultR3: 
+	
+		#IMPRIME INSTRUCAO
+		lw $t0, 0($sp)
+		lw $a0, ($t0)  
+		li $v0, PRINT_STRING
+		syscall
+
+		#IMPRIME RS	
+		lw $t0, 4($sp)
+		lw $a0, ($t0)
+		li $v0, PRINT_STRING
+		syscall	
+
+		j finit
+	imprimeResultR4: 
+	
+		#IMPRIME INSTRUCAO
+		lw $t0, 0($sp)
+		lw $a0, ($t0)  
+		li $v0, PRINT_STRING
+		syscall
+		
+		#IMPRIME RD 	
+		lw $t0, 12($sp)
+		lw $a0, ($t0) 
+		li $v0, PRINT_STRING
+		syscall
+
+		#IMPRIME RS	
+		lw $t0, 4($sp)
+		lw $a0, ($t0)
+		li $v0, PRINT_STRING
+		syscall	
+		j finit
+
+	imprimeResultR5: 
+	
+		#IMPRIME INSTRUCAO
+		lw $t0, 0($sp)
+		lw $a0, ($t0)  
+		li $v0, PRINT_STRING
+		syscall
+
+		j finit
+
+
+	imprimeResultR6: 
+	
+		#IMPRIME INSTRUCAO
+		lw $t0, 0($sp)
+		lw $a0, ($t0)  
+		li $v0, PRINT_STRING
+		syscall
+		
+		#IMPRIME RD 	
+		lw $t0, 12($sp)
+		lw $a0, ($t0) 
+		li $v0, PRINT_STRING
+		syscall
+
+		j finit
+	imprimeResultR7: 
+	
+		#IMPRIME INSTRUCAO
+		lw $t0, 0($sp)
+		lw $a0, ($t0)  
+		li $v0, PRINT_STRING
+		syscall
+		
+		#IMPRIME RS	
+		lw $t0, 4($sp)
+		lw $a0, ($t0)
+		li $v0, PRINT_STRING
+		syscall	
+		
+		#IMPRIME RT	
+		lw $t0, 8($sp)
+		lw $a0, ($t0)  
+		li $v0, PRINT_STRING
+		syscall	
+
+		j finit
+	imprimeResultR8: 	
+	
+		#IMPRIME INSTRUCAO
+		lw $t0, 0($sp)
+		lw $a0, ($t0)  
+		li $v0, PRINT_STRING
+		syscall
+		
+		#IMPRIME RD 	
+		lw $t0, 12($sp)
+		lw $a0, ($t0) 
+		li $v0, PRINT_STRING
+		syscall
+
+		#IMPRIME RS	
+		lw $t0, 4($sp)
+		lw $a0, ($t0)
+		li $v0, PRINT_STRING
+		syscall	
+		
+		#IMPRIME RT	
+		lw $t0, 8($sp)
+		lw $a0, ($t0)  
+		li $v0, PRINT_STRING
+		syscall	
+
+		j finit
+	imprimeResultI1: 
+	
+		#IMPRIME INSTRUCAO
+		lw $t0, 0($sp)
+		lw $a0, ($t0)  
+		li $v0, PRINT_STRING
+		syscall
+
+		#IMPRIME RS	
+		lw $t0, 4($sp)
+		lw $a0, ($t0)  
+		li $v0, PRINT_STRING
+		syscall	
+		
+		#IMPRIME CONSTANTE	
+		lw $a0, 12($sp)  
 		li $v0, 34
 		syscall
 		
+		addi $sp, $sp, 16
 		j finit
-
-	imprimeResultI: 
+	
+	imprimeResultI2: 
 	
 		#IMPRIME INSTRUCAO
 		lw $t0, 0($sp)
@@ -391,8 +595,60 @@
 		li $v0, 34
 		syscall
 		
+		addi $sp, $sp, 16
 		j finit
+
+	imprimeResultI3: 
 	
+		#IMPRIME INSTRUCAO
+		lw $t0, 0($sp)
+		lw $a0, ($t0)  
+		li $v0, PRINT_STRING
+		syscall
+		
+		#IMPRIME RT	
+		lw $t0, 8($sp)
+		lw $a0, ($t0) 
+		li $v0, PRINT_STRING
+		syscall	
+
+		#IMPRIME RS	
+		lw $t0, 4($sp)
+		lw $a0, ($t0)  
+		li $v0, PRINT_STRING
+		syscall	
+		
+		#IMPRIME CONSTANTE	
+		lw $a0, 12($sp)  
+		li $v0, 34
+		syscall
+		
+		addi $sp, $sp, 16
+		j finit
+
+	imprimeResultI4: 
+	
+		#IMPRIME INSTRUCAO
+		lw $t0, 0($sp)
+		lw $a0, ($t0)  
+		li $v0, PRINT_STRING
+		syscall
+		
+		#IMPRIME RT	
+		lw $t0, 8($sp)
+		lw $a0, ($t0) 
+		li $v0, PRINT_STRING
+		syscall	
+		
+		#IMPRIME CONSTANTE	
+		lw $a0, 12($sp)  
+		li $v0, 34
+		syscall
+		
+		addi $sp, $sp, 16
+		j finit
+
+
 	imprimeResultJ: 
 	
 		#IMPRIME INSTRUCAO
@@ -406,5 +662,8 @@
 		li $v0, 34
 		syscall
 		
+		addi $sp, $sp, 8
 		j finit
 	
+
+
