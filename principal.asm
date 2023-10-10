@@ -1,5 +1,5 @@
 .data 
-	codigo: .word 0x040216CD
+	codigo: .word 0x000216CD
 	stringNaoAchouFuncao: .asciiz "Funcao nao encontrada... "
 	
 	string1: .asciiz "Opcode: "
@@ -82,7 +82,7 @@
 		j main
 	
 	finit:
-		li $v0, 10
+		li $v0, 17 #ENCERRA O PROGRAMA
 		syscall
 
 	main:
@@ -97,288 +97,280 @@
 		sw $v0, 0($sp)
 		move $t0, $v0
 		
-		beqz $t0, tipoR
-		beq $t0, 0x02, tipoJ
-		beq $t0, 0x03, tipoJ
+		beqz $t0, tipoR  # SE OPCODE == 0
+		beq $t0, 0x02, tipoJ # SE OPCODE == 2
+		beq $t0, 0x03, tipoJ # SE OPCODE == 3
 	
-		j tipoI
+		j tipoI # SE NAO EH TIPO i
 		
     pega_opcode:
-		li  $t1, 0xFC000000        # $t1 <- MASCARA PARA ISOLAR PRIMEIROS 6 BITS
+			li  $t1, 0xFC000000        # $t1 <- MASCARA PARA ISOLAR PRIMEIROS 6 BITS
         	and $v0, $a1, $t1       # $v0 <- PRIMEIROS 6 BITS DO CODIGO
         	srl $v0, $v0, 26 	   # $v0 <- SHIFTADO DIREITA 26 BITS
         	
-        	jr $ra
+        	jr $ra #RETORNA PARA A CHAMADA DA FUNCAO
 
     pega_rs:
        		li  $t1, 0x03E00000       # $t1 <- MASCARA PARA ISOLAR 5 BITS DE RS
         	and $v0, $a1, $t1       # $v0 <- 5 BITS DE RS
         	srl $v0, $v0, 21 	   # $v0 <- SHIFTADO DIREITA 21 BITS
         	
-        	jr $ra
+        	jr $ra #RETORNA PARA A CHAMADA DA FUNCAO
 
     pega_rt:
         	li  $t1, 0x001F0000       # $t1 <- MASCARA PARA ISOLAR 5 BITS DE RT
         	and $v0, $a1, $t1       # $v0 <- 5 BITS DE RT
         	srl $v0, $v0, 16	   # $v0 <- SHIFTADO DIREITA 16 BITS
         	
-        	jr $ra
+        	jr $ra #RETORNA PARA A CHAMADA DA FUNCAO
 
     pega_rd:
         	li  $t1, 0x0000F800       # $t1 <- MASCARA PARA ISOLAR 5 BITS DE RS
         	and $v0, $a1, $t1       # $v0 <- 5 BITS DE RS
         	srl $v0, $v0, 11	   # $v0 <- SHIFTADO DIREITA 11 BITS
         	
-        	jr $ra
+        	jr $ra #RETORNA PARA A CHAMADA DA FUNCAO
 
     pega_sa:
         	li  $t1, 0x000007C0       # $t1 <- MASCARA PARA ISOLAR 5 BITS DE SA
         	and $v0, $a1, $t1       # $v0 <- 5 BITS DE SA
         	srl $v0, $v0, 6	   	# $v0 <- SHIFTADO DIREITA 6 BITS
         	
-        	jr $ra
+        	jr $ra #RETORNA PARA A CHAMADA DA FUNCAO
 
     pega_function:
         	li  $t1, 0x0000003F       # $t1 <- MASCARA PARA ISOLAR ULTIMOS 6 BITS DE FUNCTION
         	and $v0, $a1, $t1       # $v0 <- 6 BITS DE FUNCTION
         	
-        	jr $ra
+        	jr $ra #RETORNA PARA A CHAMADA DA FUNCAO
 
     pega_constante:
         	li  $t1, 0x0000FFFF       # $t1 <- MASCARA PARA ISOLAR 16 BITS DA CONSTANTE
         	and $v0, $a1, $t1       # $v0 <- 16 BITS DA CONSTANTE
         	
-        	jr $ra
+        	jr $ra #RETORNA PARA A CHAMADA DA FUNCAO
 
 	pega_target:
         	li  $t1, 0x03FFFFFF       # $t1 <- MASCARA PARA ISOLAR 26 BITS DE TARGET
         	and $v0, $a1, $t1       # $a0 <- 26 BITS DE TARGET
         	
-        	jr $ra
+        	jr $ra #RETORNA PARA A CHAMADA DA FUNCAO
 
 	tipoR:
-		#PEGAR FUNCTION
-		jal pega_function
-		move $t0, $v0
-		sw $t0, 0($sp)
+		jal pega_function  # PEGAR FUNCTION
+		move $t0, $v0 	   # $T0 = RETORNO DA FUNCAO
+		sw $t0, 0($sp) 	   # STORE O VALOR DE T0 NA PILHA
 
-		li $a2, 0 # contador <- 0
+		li $a2, 0 # CONTADOR = 0
 		while0:
-			bgt $a2, 0x2B, naoAchou
-			beq $t0, $a2, VetorTipoR
-			add $a2, $a2, 1
-		j while0
+			bgt $a2, 0x2B, naoAchou # SE CONTADOR > 0X2B ENTAO NAO ACHOU
+			beq $t0, $a2, VetorTipoR # SE CONTADOR == FUNCTION
+			add $a2, $a2, 1 # CONTADOR++
+		j while0 
 
 	tipoJ:
-		lw $t0, 0($sp)
-		li $a2, 1 # contador <- 1
+		lw $t0, 0($sp) # $T0 = OPCODE DA PILHA
+		li $a2, 1 # CONTADOR = 1
 		while1:
-			bgt $a2, 0x39, naoAchou
-			beq $t0, $a2, VetorTipoJ
-			add $a2, $a2, 1
+			bgt $a2, 0x39, naoAchou  # SE CONTADOR > 0X39 ENTAO NAO ACHOU
+			beq $t0, $a2, VetorTipoJ # SE CONTADOR == OPCODE 
+			add $a2, $a2, 1 # CONTADOR++
 		j while1
 		
 	tipoI:
-		lw $t0, 0($sp)
-		li $a2, 1 # contador <- 1
+		lw $t0, 0($sp) # $T0 = OPCODE DA PILHA
+		li $a2, 1 # CONTADOR = 1
 		while2:
-			bgt $a2, 0x39, naoAchou
-			beq $t0, $a2, VetorTipoI
-			add $a2, $a2, 1
+			bgt $a2, 0x39, naoAchou # SE CONTADOR > 0X39 ENTAO NAO ACHOU
+			beq $t0, $a2, VetorTipoI # SE CONTADOR == OPCODE 
+			add $a2, $a2, 1 # CONTADOR++
 		j while2
 
 	VetorTipoJ:
-		addi $sp, $sp, -4
+		addi $sp, $sp, -4       #AJUSTA PILHA
 
-		la $t0, vetor_ponteiros # $t0 <- endere?o base do vetor de ponteiros para strings
-		sub $a2, $a2, 1
-		sll $a2, $a2, 2
-		add $t0, $a2, $t0 # t0 <- &array[i]
+		la $t0, vetor_ponteiros # $T0 = ENDERECO BASE DO VETOR DE INSTRUCOES
+		sub $a2, $a2, 1         # INDICE = INDICE - 1
+		sll $a2, $a2, 2         # INDICE * 4
+		add $t0, $a2, $t0       # $T0 = &VETOR[I]
 		
-		sw $t0, 0($sp)  
+		sw $t0, 0($sp)          #GUARDAMOS O ENDERECO DA STRING DA INSTRUCAO NA PILHA
 		
-		#PEGAR TARGET
-		jal pega_target
-		move $t0, $v0
-		sw $v0, 4($sp)
+		jal pega_target        	#PEGAR TARGET
+		move $t0, $v0			#$T0 RECEBE O RETORNO DA FUNCAO
+		sw $v0, 4($sp)			#GUARDA O TARGET NA PILHA
 
-		j imprimeResultJ
+		j imprimeResultJ       #IMPRIME RESULTADO TIPO j
 
 	VetorTipoI:
-		lw $s1, 0($sp)      #$S1 = VALOR DO OPCODE
-		addi $sp, $sp, -12
+		lw $s1, 0($sp)      # $S1 = VALOR DO OPCODE DA PILHA
+		addi $sp, $sp, -12	# AJUSTA PILHA
 
-		la $t0, vetor_ponteiros # $t0 <- endere?o base do vetor de ponteiros para strings
-		sub $a2, $a2, 1
-		sll $a2, $a2, 2
-		add $t0, $a2, $t0 # t0 <- &array[i]
+		la $t0, vetor_ponteiros # $T0 = ENDERECO BASE DO VETOR DE INSTRUCOES
+		sub $a2, $a2, 1 		# INDICE = INDICE - 1
+		sll $a2, $a2, 2			# INDICE * 4
+		add $t0, $a2, $t0 		# $T0 = &VETOR[I]
 		
-		sw $t0, 0($sp)  
+		sw $t0, 0($sp)   		# GUARDAMOS O ENDERECO DA STRING DA INSTRUCAO NA PILHA
 		
-		#PEGAR RS
-		jal pega_rs
-		move $t0, $v0
-		sw $t0, 4($sp)
+		jal pega_rs				# PEGAR RS
+		move $t0, $v0			# $T0 RECEBE O RETORNO DA FUNCAO
+		sw $t0, 4($sp)			# GUARDA O RS NA PILHA
        
-		#PEGAR RT
-		jal pega_rt
-		move $t0, $v0
-		sw $t0, 8($sp)
+		jal pega_rt				# PEGAR RT
+		move $t0, $v0			# $T0 RECEBE O RETORNO DA FUNCAO
+		sw $t0, 8($sp)			# GUARDA O RT NA PILHA
 
-		#PEGAR CONSTANTE
-		jal pega_constante
-		move $t0, $v0
-		sw $t0, 12($sp)
+		jal pega_constante		# PEGAR CONSTANTE
+		move $t0, $v0			# $T0 RECEBE O RETORNO DA FUNCAO
+		sw $t0, 12($sp)			# GUARDA O RT NA PILHA
 		
-		jal traduzRegistradorRS
-		jal traduzRegistradorRT
+		jal traduzRegistradorRS  # TRADUZ VALOR DO REGISTRADOR RS PARA STRING
+		jal traduzRegistradorRT	 # TRADUZ VALOR DO REGISTRADOR RT PARA STRING
 
 		addi $s0, $zero, 1 # $S0 = 1
-		beq $s1, $s0, imprimeResultI1 #IF($S1 == 1){}
+		beq $s1, $s0, imprimeResultI1 # IF($S1 == 1) IMPRIME RESULTADO FORMATO i1
 
 		addi $s0, $zero, 6 # $S0 = 6
-		blt $s1, $s0, imprimeResultI2 #IF($S1 < 6){}
+		blt $s1, $s0, imprimeResultI2 # IF($S1 < 6) IMPRIME RESULTADO FORMATO i2
 
 		addi $s0, $zero, 8 # $S0 = 8
-		blt $s1, $s0, imprimeResultI1 #IF($S1 < 8){}
+		blt $s1, $s0, imprimeResultI1 # IF($S1 < 8) IMPRIME RESULTADO FORMATO i1
 
 		addi $s0, $zero, 0x0F # $S0 = 0x0F
-		blt $s1, $s0, imprimeResultI3 #IF($S1 < 0x0F){}
+		blt $s1, $s0, imprimeResultI3 # IF($S1 < 0x0F) IMPRIME RESULTADO FORMATO i3
 
 		addi $s0, $zero, 0x3A # $S0 = 0x3A
-		blt $s1, $s0, imprimeResultR4 #IF($S1 < 0x3A){}
+		blt $s1, $s0, imprimeResultR4 # IF($S1 < 0x3A) IMPRIME RESULTADO FORMATO i4
 
-		j finit
+		j finit # ENCERRA PROGRAMA
 
 	VetorTipoR:
-		lw $s1, 0($sp)      #$S1 = VALOR DE FUNCTION
-		addi $sp, $sp, -16 # AJUSTA A PILHA
+		lw $s1, 0($sp)      # $S1 = VALOR DE FUNCTION
+		addi $sp, $sp, -16  # AJUSTA A PILHA
 
-		la $t0, vetor_functions # $t0 <- ENDERECO BASE DO VETOR FUNCTIONS
-		sll $a2, $a2, 2     # MULTIPLICA INDICE DO VETOR POR 4
-		add $t0, $a2, $t0 # $T0 <- &VETOR[i]
+		la $t0, vetor_functions 	# $T0 = ENDERECO BASE DO VETOR DE FUNCTIONS
+		sll $a2, $a2, 2     		# INDICE * 4
+		add $t0, $a2, $t0 			# $T0 = &VETOR[I]
 		
-		sw $t0, 0($sp)  # guarda a string de function
+		sw $t0, 0($sp)  			# GUARDAMOS O ENDERECO DA STRING DA INSTRUCAO NA PILHA
 
-		#PEGAR RS
-		jal pega_rs   
-		move $t0, $v0  # RECEBE O VALOR DE RS
-		sw $t0, 4($sp) # GUARDA RS NA PILHA
+		
+		jal pega_rs   	# PEGAR RS
+		move $t0, $v0   # $T0 RECEBE O RETORNO DA FUNCAO
+		sw $t0, 4($sp) 	# GUARDA O RS NA PILHA
     
-		#PEGAR RT
-		jal pega_rt
-		move $t0, $v0 # RECEBE O VALOR DE RT
-		sw $t0, 8($sp)  # GUARDA RT NA PILHA
+		jal pega_rt 	# PEGAR RT
+		move $t0, $v0   # $T0 RECEBE O RETORNO DA FUNCAO
+		sw $t0, 8($sp)  # GUARDA O RT NA PILHA
 	
-		#PEGAR RD
-        jal pega_rd
-		move $t0, $v0 # RECEBE O VALOR DE RD
-		sw $t0, 12($sp)  # GUARDA RD NA PILHA
-	
-		#PEGAR SA
-		jal pega_sa 
-		move $t0, $v0  # RECEBE O VALOR DE SA
-		sw $t0, 16($sp)  # GUARDA SA NA PILHA
+        jal pega_rd		# PEGAR RD
+		move $t0, $v0 	# $T0 RECEBE O RETORNO DA FUNCAO
+		sw $t0, 12($sp) # GUARDA O RD NA PILHA
+		
+		jal pega_sa 	# PEGAR SA
+		move $t0, $v0   # $T0 RECEBE O RETORNO DA FUNCAO
+		sw $t0, 16($sp) # GUARDA O SA NA PILHA
         
-		jal traduzRegistradorRS
-		jal traduzRegistradorRT
-		jal traduzRegistradorRD
+		jal traduzRegistradorRS # TRADUZ VALOR DO REGISTRADOR RS PARA STRING
+		jal traduzRegistradorRT # TRADUZ VALOR DO REGISTRADOR RT PARA STRING
+		jal traduzRegistradorRD # TRADUZ VALOR DO REGISTRADOR RD PARA STRING
 
 		addi $s0, $zero, 4 # $S0 = 4
-		blt $s1, $s0, imprimeResultR1 #IF($S1 < 4){}
+		blt $s1, $s0, imprimeResultR1 # IF($S1 < 4) IMPRIME RESULTADO FORMATO R1
 
 		addi $s0, $zero, 8 # $S0 = 8
-		blt $s1, $s0, imprimeResultR2 #IF($S1 < 8){}
+		blt $s1, $s0, imprimeResultR2 #I F($S1 < 8) IMPRIME RESULTADO FORMATO R2
 
-		beq $s1, $s0, imprimeResultR3 #IF($S1 == 8){}
+		beq $s1, $s0, imprimeResultR3 # IF($S1 == 8) IMPRIME RESULTADO FORMATO R3
 
 		addi $s0, $zero, 9 # $S0 = 9
-		beq $s1, $s0, imprimeResultR4 #IF($S1 == 9){}
+		beq $s1, $s0, imprimeResultR4 # IF($S1 == 9) IMPRIME RESULTADO FORMATO R4
 
 		addi $s0, $zero, 0x10 # $S0 = 0x10
-		blt $s1, $s0, imprimeResultR5 #IF($S1 < 0x10){}
+		blt $s1, $s0, imprimeResultR5 # IF($S1 < 0x10) IMPRIME RESULTADO FORMATO R5
 
 		addi $s0, $zero, 0x10 # $S0 = 0x10
-		beq $s1, $s0, imprimeResultR6 #IF($S1 == 0x10){}
+		beq $s1, $s0, imprimeResultR6 # IF($S1 == 0x10) IMPRIME RESULTADO FORMATO R6
 		addi $s0, $zero, 0x12 # $S0 = 0x12
-		beq $s1, $s0, imprimeResultR6 #IF($S1 == 0x12){}
+		beq $s1, $s0, imprimeResultR6 # IF($S1 == 0x12) IMPRIME RESULTADO FORMATO R6
 
 		addi $s0, $zero, 0x11 # $S0 = 0x11
-		beq $s1, $s0, imprimeResultR3 #IF($S1 == 0x11){}
+		beq $s1, $s0, imprimeResultR3 # IF($S1 == 0x11) IMPRIME RESULTADO FORMATO R3
 		addi $s0, $zero, 0x13 # $S0 = 0x13
-		beq $s1, $s0, imprimeResultR3 #IF($S1 == 0x13){}
+		beq $s1, $s0, imprimeResultR3 # IF($S1 == 0x13) IMPRIME RESULTADO FORMATO R3
 
 		addi $s0, $zero, 0x20 # $S0 = 0x20
-		blt $s1, $s0, imprimeResultR7 #IF($S1 < 0x20){}
+		blt $s1, $s0, imprimeResultR7 # IF($S1 < 0x20) IMPRIME RESULTADO FORMATO R7
 		
 		addi $s0, $zero, 0x2C # $S0 = 0x2C
-		blt $s1, $s0, imprimeResultR8 #IF($S1 < 0x2C){}
+		blt $s1, $s0, imprimeResultR8 # IF($S1 < 0x2C) IMPRIME RESULTADO FORMATO R8
 
-		j finit
+		j finit #ENCERRA O PROGRAMA
 	traduzRegistradorRS:
-		lw $t0, 4($sp) 
+		lw $t0, 4($sp) # $T0 = RS DA PILHA
 
-		li $a2, 0 # contador <- 0
+		li $a2, 0 # CONTADOR = 0
 		while3:
-			bgt $a2, 0x1F, naoAchou
-			beq $t0, $a2, registradorRS
-			add $a2, $a2, 1
+			bgt $a2, 0x1F, naoAchou 	# SE CONTADOR > 0X1F ENTAO NAO ACHOU
+			beq $t0, $a2, registradorRS # SE CONTADOR == REGISTRADOR 
+			add $a2, $a2, 1	# CONTADOR++
 		j while3
 	
 	traduzRegistradorRT:
-		lw $t0, 8($sp)
+		lw $t0, 8($sp) # $T0 = Rt DA PILHA
 
-		li $a2, 0 # contador <- 0
+		li $a2, 0 # CONTADOR = 0
 		while4:
-			bgt $a2, 0x1F, naoAchou
-			beq $t0, $a2, registradorRT
-			add $a2, $a2, 1
+			bgt $a2, 0x1F, naoAchou		# SE CONTADOR > 0X1F ENTAO NAO ACHOU
+			beq $t0, $a2, registradorRT # SE CONTADOR == REGISTRADOR 
+			add $a2, $a2, 1 # CONTADOR++
 		j while4
 	
 	traduzRegistradorRD:
-		lw $t0, 12($sp)
+		lw $t0, 12($sp) # $T0 = Rt DA PILHA
 
-		li $a2, 0 # contador <- 0
+		li $a2, 0 # CONTADOR = 0
 		while5:
-			bgt $a2, 0x1F, naoAchou
-			beq $t0, $a2, registradorRD
-			add $a2, $a2, 1
+			bgt $a2, 0x1F, naoAchou 	# SE CONTADOR > 0X1F ENTAO NAO ACHOU
+			beq $t0, $a2, registradorRD	# SE CONTADOR == REGISTRADOR
+			add $a2, $a2, 1				# CONTADOR++
 		j while5
 
 	registradorRS:
 		
-		la $t0, vetor_registradores # $t0 <- endereco base do vetor de ponteiros para strings
-		sll $a2, $a2, 2
-		add $t0, $a2, $t0 # t0 <- &array[i]
+		la $t0, vetor_registradores # $T0 = ENDERECO BASE DO VETOR DE REGISTRADORES
+		sll $a2, $a2, 2				# INDICE * 4
+		add $t0, $a2, $t0 			# $T0 = &VETOR[I]
 		
-		sw $t0, 4($sp)  
+		sw $t0, 4($sp)  			#GUARDAMOS O ENDERECO DA STRING DO REGISTRADOR NA PILHA
 	
-		jr $ra
+		jr $ra						#RETORNA PARA A CHAMADA DA FUNCAO
 	
 	registradorRT:
 		
-		la $t0, vetor_registradores # $t0 <- endereco base do vetor de ponteiros para strings
-		sll $a2, $a2, 2
-		add $t0, $a2, $t0 # t0 <- &array[i]
+		la $t0, vetor_registradores # $T0 = ENDERECO BASE DO VETOR DE REGISTRADORES
+		sll $a2, $a2, 2				# INDICE * 4
+		add $t0, $a2, $t0 			# $T0 = &VETOR[I]
 		
-		sw $t0, 8($sp)  
+		sw $t0, 8($sp)  			#GUARDAMOS O ENDERECO DA STRING DO REGISTRADOR NA PILHA
 	
-		jr $ra
+		jr $ra						#RETORNA PARA A CHAMADA DA FUNCAO
 	
 	registradorRD:
 		
-		la $t0, vetor_registradores # $t0 <- endereco base do vetor de ponteiros para strings
-		sll $a2, $a2, 2
-		add $t0, $a2, $t0 # t0 <- &array[i]
+		la $t0, vetor_registradores # $T0 = ENDERECO BASE DO VETOR DE REGISTRADORES
+		sll $a2, $a2, 2				# INDICE * 4
+		add $t0, $a2, $t0 			# $T0 = &VETOR[I]
 		
-		sw $t0, 12($sp)  
+		sw $t0, 12($sp)  			#GUARDAMOS O ENDERECO DA STRING DO REGISTRADOR NA PILHA
 	
-		jr $ra
+		jr $ra						#RETORNA PARA A CHAMADA DA FUNCAO
 
 	naoAchou:
 		
-		imprime_string(stringNaoAchouFuncao)
-		j finit 
+		imprime_string(stringNaoAchouFuncao) #IMPRIME STRING NAO ACHOU
+		j finit  #ENCERRA O PROGRAMA
 	
 	
 
