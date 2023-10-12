@@ -1,18 +1,14 @@
 .data
-        descritor_arquivo: .word 0                  # descritor do arquivo: um inteiro não negativo
+        descritor_arquivo: .word 0                  # descritor do arquivo: um inteiro nao negativo
         nome_do_arquivo: .asciiz "notas.bin"        # nome do arquivo
-        .align 2                                    # Alinhamos o endereço de buffer para ser múltiplo de 4, senão erro:
-                                                    # "store address not aligned on word boundary" ou endereço de armazenamento
-                                                    # não está alinhado com os limites da palavra
+        .align 2                                    # Alinhamos o endereco de buffer para ser multiplo de 4, sendo erro:
+                                                    # "store address not aligned on word boundary" ou enderedo de armazenamento
+                                                    # nao esta alinhado com os limites da palavra
         buffer_leitura: .space 32                   # buffer para a leitura do arquivo 
 
-        str_erro_abertura_arquivo: .asciiz "[ERRO] O arquivo não pôde ser aberto\n"
+        str_erro_abertura_arquivo: .asciiz "[ERRO] O arquivo nao pode ser aberto\n"
         str_erro_leitura_registro: .asciiz "[ERRO] Erro de leitura do arquivo"
 
-        campos_ponteiro: .word campo_ID
-
-        campos_nomes:
-        campo_ID: .asciiz "Codigo: "                      # 0
 
 
 .text
@@ -20,159 +16,130 @@
 init:
             jal     main                    # executa o procedimento principal
 finit:
-            move	$a0, $v0                # $a0 <- código de retorno do programa
-            li      $v0, 17                 # $v0 <- número do serviço exit2
-            syscall                         # executamos o serviço exit 2
+            move	$a0, $v0                # $a0 = CODIGO DE RETORNO DO PROGRAMA
+            li      $v0, 17                 # $v0 = SERVICO EXIT 2
+            syscall                        
 
 
 
 arquivo_abrir_leitura:
 
-            li      $a1, 0                  # $a1 <- flag igual a 0: abre o arquivo para leitura.
-            li      $a2, 0                  # $a2 <- modo. Não é usado
-            li      $v0, 13                 # $v0 <- serviço 13: abre arquivo para leitura ou escrita
-            syscall                         # realizamos uma chamada ao sistema, para a abertura do arquivo
+            li      $a1, 0                  # $a1 = FLAG = 0: ABRIR ARQUIVO PARA LEITURA
+            li      $a2, 0                  # $a2 <- MODO (NAO USADO)
+            li      $v0, 13                 # $v0 <- SERVICO 13: ABRIR ARQUIVO PARA LEITURA OU ESCRUTA
+            syscall                 
 
-            jr	    $ra                     # retorma ao procedimento chamador
+            jr	    $ra                     
 
 
 arquivo_fechar:
 
-            li      $v0, 16                 # $v0 <- serviço 16: fechamos o arquivo com o descritor em $a0
-            syscall                         # realizamos uma chamada ao sistema, fechando o arquivo com o descritor em $a0
+            li      $v0, 16                 # $v0 = SERVICO 16: FECHA O ARQUIVO COM DESCRITOR EM $a0
+            syscall                         
 
-            jr	    $ra                     # retorna ao procedimento chamador
+            jr	    $ra                     
 
 
 arquivo_leia_registro:
 
-            lw      $a0, 0($t0)             # $a0 <- descritor do arquivo. $t0 contém o endereço do descritor_arquivo
-            la	    $a1, buffer_leitura     # $a1 <- endereço do buffer com os dados que serão escritos
-            li      $a2, 4                  # $a2 <- número de bytes que serão lidos do arquivo para o buffer
-            li      $v0, 14                 # $v0 <- serviço 14: leia um arquivo
-            syscall                         # realiza uma chamada ao sistema, lendo 4 bytes para o buffer no arquivo
+            lw      $a0, 0($t0)             # $a0 = ENDERECO DESCRITOR DO ARQUIVO 
+            la	    $a1, buffer_leitura     # $a1 = ENDERECO DO BUFFER COM OS DADOS A SEREM ESCRITOS
+            li      $a2, 4                  # $a2 = NUMERO DE BYTES QUE DEVEM SER LIDOS
+            li      $v0, 14                 # $v0 = SERVICO PARA LER ARQUIVO
+            syscall                         
 
-            jr	    $ra                     # retornamos ao procedimento chamador
-
-
-campo_imprime_nome:
-            # imprimimos o nome do campo
-            la	    $t0, campos_ponteiro    # carregamos o endereço do vetor de ponteiros para as strings com os nomes dos campos
-
-            lw      $a0, 0($t0)             # $a0 <- ponteiro com o endereço da string que ser´a apresentada
-            li      $v0, 4                  # $v0 <- número do serviço para imprimir uma string
-            syscall                         # apresentamos o nome do campo
-            
-            jr      $ra                     # retorna ao procedimento chamador
+            jr	    $ra                   
 
 registro_processa:
    
-            addiu   $sp, $sp, -12           # ajustamos a pilha
-            sw      $a0, 8($sp)             # armazenamos na pilha o argumento com o endereço do buffer de leitura
-            sw      $ra, 4($sp)             # armazenamos na pilha o endereço de retorno
+            addiu   $sp, $sp, -12           # AJUSTAR A PILHA
+            sw      $a0, 8($sp)             # ARMAZENA NA PILHA ARGUMENTO COM ENDERECO DO BUFFER 
+            sw      $ra, 4($sp)             # ARMAZENA NA PILHA ENDERECO DE RETORNO
 
-rp_for_codigo:
-            # imprimimos o nome do campo
-            jal     campo_imprime_nome      # apresenta o nome do campo
-
+imprime_registro:
             # carregamos o registro
-            lw      $t0, 8($sp)             # $t0 <- endereço do buffer
-            lw      $t1, 0($t0)             # $t1 <- registro
-          
-    
-            lw      $t3, 8($sp)             # $t3 <- endereço do buffer
-            lw      $t4, 0($t3)             # $t4 <- registro
+            lw      $t0, 8($sp)             # $t0 = ENDERECO DO BUFFER
+            lw      $t1, 0($t0)             # $t1 = CODIGO
 
-            move    $a0, $t4                # $a0 <- campo ID deslocado para a direita
-            li      $v0, 34                 # $v0 <- número do serviço para imprimir um inteiro em hexadecimal
-            syscall                         # imprimimos o campo
-            # pulamos a linha
+            move    $a0, $t1                # $a0 = CODIGO 
+            li      $v0, 34                 # $v0 = IMPRIMIR HEXADECIMAL
+            syscall                         
 
-            li      $a0, '\n'               # $a0 <- nova linha
-            li      $v0, 11                 # $v0 <- serviço para imprimir um caractere
-            syscall                         # imprimimos uma nova linha.
 
-rp_for_condicao:
-            # pulamos a linha
-            li      $a0, '\n'               # $a0 <- nova linha
-            li      $v0, 11                 # $v0 <- serviço para imprimir um caractere
-            syscall                         # imprimimos uma nova linha.
+            li      $a0, '\n'               # $a0 = NOVA LINHA
+            li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
+            syscall                        
 
-            lw	    $s0, 0($sp)             # restauramos $s0
-            lw      $ra, 4($sp)             # restauramos o endereço de retorno
-            addiu   $sp, $sp, 12            # restauramos a pilha
-            jr	    $ra                     # retorna ao processo chamador
+            lw      $ra, 4($sp)             # RESTAURA O ENDERECO DE RETORNO
+            addiu   $sp, $sp, 12            # RESTAURA PILA
+            jr	    $ra                     # RETORNA AO PROCESSO CHAMADOR
 
 main:
 
-            addiu   $sp, $sp, -8            # ajustamos a pilha
-            sw	    $ra, 4($sp)             # armazenamos $ra na pilha
+            addiu   $sp, $sp, -8            # AJUSTA A PILHA
+            sw	    $ra, 4($sp)             # ARMAZENA $RA DE INIT NA PILHA
 
-            sw	    $zero, 0($sp)           # código de retorno = 0 = SUCESSO
+            sw	    $zero, 0($sp)           # CODIGO DE RETORNO = 0 = SUCESSO
 
-            # abrimos o arquivo para leitura
-            la	    $a0, nome_do_arquivo    # $a0 <- endereço da string com o nome do arquivo
-            jal     arquivo_abrir_leitura   # abre o arquivo para a leitura
-            la      $t0, descritor_arquivo  # $t0 <- endereço onde será armazenado o descritor do arquivo
-            sw      $v0, 0($t0)             # armazenamos em descritor_arquivo o descritor encontrado na abertura do arquivo
+            # ABRE O ARQUIVO PARA LEITURA
+            la	    $a0, nome_do_arquivo    # $a0 = ENDERECO DA STRING COM NOME DO ARQUIVO
+            jal     arquivo_abrir_leitura   # PROCEDIMENTO ABRE O ARQUIVO PARA LEITURA
+            la      $t0, descritor_arquivo  # $t0 = ENDERECO DE ONDE ARMAZENAR O DESCRITOR DO ARQUIVO
+            sw      $v0, 0($t0)             # ARMAZENA O DESCRITOR DO ARQUIVO ACHADO 
 
-            # se o arquivo não pode ser aberto, tratamos o erro
-            slt     $t0, $v0, $zero         # se o descritor for menor que 0
-            bne     $t0, $zero, main_if_arquivo_nao_pode_ser_aberto
+            # SE NAO FOI POSSIVEL ABRIR TRATA  O ERRO
+            slt     $t0, $v0, $zero         # SE DESCRITOR MENOR QUE 0
+            bne     $t0, $zero, main_if_arquivo_nao_pode_ser_aberto 
 
 main_if_arquivo_aberto:
-            j       main_if_arquivo_fim     # sem erro de abertura: continua com o programa
+            j       main_while     # sem erro de abertura: continua com o programa
 
 main_if_arquivo_nao_pode_ser_aberto:
             # imprimimos uma string 
-            la      $a0, str_erro_abertura_arquivo  # $a0 <- endereço da string com a mensagem de erro
-            li      $v0, 4                  # $v0 <- serviço 4: imprime uma string
-            syscall                         # imprimimos a mensagem de erro
-            li      $v0, 1                  # $v0 <- 1, valor de retorno indicando erro no programa
-            bne     $t0, $zero, fim_leitura_registros # encerra o procedimento mais
+            la      $a0, str_erro_abertura_arquivo  # $a0 = ENDERECO DA STRING ERRO
+            li      $v0, 4                  # $v0 = SERVICO IMPRIME STRING
+            syscall                
+            li      $v0, 1                  # $v0 = 1, VALOR DO RETORNO QUE DIZ QUE DEU ERRO
+            bne     $t0, $zero, fim_leitura_registros # ENCERRA PROCEDIMENTO MAIN
 
-main_if_arquivo_fim:
-            # lemos um registro do arquivo (uma palavra, 4 bytes)
-main_while:
-            j       main_while_verifica_condicao
+main_while:   
+            j       main_while_verifica_condicao #LER UMA PALAVRA DE 4 BYTES
 
 main_while_codigo:
-            # verificamos se o número de bytes lido é 4
-            slti    $t0, $v0, 4             # se um registro não pôde ser lida do arquivo de entrada
-            bne     $t0, $zero,main_if_leitura_registro_erro # termina o programa
+            # VERIFICA SE O NUMERO DE BYTES LIDOS FOI = 4
+            slti    $t0, $v0, 4                 	        # SE UM REGISTRO NAO PODE SER LIDO
+            bne     $t0, $zero,main_if_leitura_registro_erro    # ENCERRA O PROGRAMA
 
 main_if_leitura_registro_ok:
-            la      $a0, buffer_leitura     # $a0 <- endereço do buffer de leitura
-            jal     registro_processa       # processa o registro lido do arquivo de entrada
-            j       main_if_leitura_registro_fim # termina o processamento do registro
+            la      $a0, buffer_leitura     # $a0 = ENDERECO DO BUFFER DE LEITURA
+            jal     registro_processa       # PROCESSA O REGISTRO LIDO DO ARQUIVO (PRINT CODIGO)
+            j      main_while_verifica_condicao # VAI PRO PROXIMO REGISTRO
 
 main_if_leitura_registro_erro:
-            # imprimimos uma string 
-            la      $a0, str_erro_leitura_registro  # $a0 <- endereço da string com a mensagem de erro
-            li      $v0, 4                  # $v0 <- serviço 4: imprime uma string
-            syscall                         # imprimimos a mensagem de erro
-            li      $v0, 1                  # $v0 <- 1, valor de retorno indicando erro no programa
-            bne     $t0, $zero, fim_leitura_registros # encerra o procedimento mais            
+            la      $a0, str_erro_leitura_registro  # $a0 = ENDERECO DA STRING DE ERRO
+            li      $v0, 4                  # $v0 = IMPRIME STRING
+            syscall                         
+            li      $v0, 1                  # $v0 = 1, VALOR DE RETORNO QUE INDICA QUE DEU ERRO
+            bne     $t0, $zero, fim_leitura_registros # ENCERRA O PROCEDIMENTO            
 
-main_if_leitura_registro_fim:
+
 main_while_verifica_condicao:
-                la      $t0, descritor_arquivo  # $t0 <- endereço onde será armazenado o descritor do arquivo
-                lw      $a0, 0($t0)             # $a0 <- descritor do arquivo
-                la      $a1, buffer_leitura     # $a1 <- endereço do buffer de leitura
-                jal     arquivo_leia_registro   # tentamos ler um registro (4 bytes), $v0 retorna o número de bytes lidos
-                bne     $v0, $zero, main_while_codigo # se não chegamos ao final do arquivo, processamos o registro
-
+                la      $t0, descritor_arquivo  # $t0 = ENDERECO ONDE SERA ARMAZENADO DESCRITOR DO ARQUIVO
+                lw      $a0, 0($t0)             # $a0 = DESCRITOR DO ARQUIVO
+                la      $a1, buffer_leitura     # $a1 = ENDERECO DO BUFFER DE LEITURA
+                jal     arquivo_leia_registro   # TENTAR LER 4 BYTES, $v0 RETORNA O NUMERO DE BYTES LIDOS
+                bne     $v0, $zero, main_while_codigo # SE NAO CHEGOU NO FIM DO ARQUIVO, ENTAO PROCESSA REGISTRO
 
 fim_leitura_registros:
-            # fechamos o arquivo
-            la      $t0, descritor_arquivo  # $t0 <- endereço do descritor do arquivo
-            lw      $a0, 0($t0)             # $a0 <- descritor do arquivo
-            jal     arquivo_fechar          # fechamos o arquivo
+            # FECHAMOS O ARQUIVO
+            la      $t0, descritor_arquivo  # $t0 = ENDERECO DO DESCRITOR DO ARQUIVO
+            lw      $a0, 0($t0)             # $a0 = DESCRITOR DO ARQUIVO
+            jal     arquivo_fechar          # FECHAMOS O ARQUIVO
 
-            lw      $ra, 4($sp)             # restauramos o endereço de retorno
-            lw      $v0, 0($sp)             # $v0 <- código de retorno do procedimento: 0 = SUCESSO
-            addiu   $sp, $sp, 8             # restauramos a pilha
-            jr	    $ra                     # retornamos ao procedimento chamador
+            lw      $ra, 4($sp)             # RESTAURA ENDERECO DE RETORNO PARA INIT
+            lw      $v0, 0($sp)             # $v0 = CODIGO DE RETORNO DO PROCEDIMENTO: 0 = SUCESSO
+            addiu   $sp, $sp, 8             # RESTAURA PILHA
+            jr	    $ra                     # RETORNAMOS AO PROCEDIMENTO CHAMADOR (INIT)
 
 
 
