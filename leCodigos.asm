@@ -31,14 +31,12 @@ arquivo_abrir_leitura:
 
             jr	    $ra                     
 
-
 arquivo_fechar:
 
             li      $v0, 16                 # $v0 = SERVICO 16: FECHA O ARQUIVO COM DESCRITOR EM $a0
             syscall                         
 
             jr	    $ra                     
-
 
 arquivo_leia_registro:
 
@@ -56,8 +54,7 @@ registro_processa:
             sw      $a0, 8($sp)             # ARMAZENA NA PILHA ARGUMENTO COM ENDERECO DO BUFFER 
             sw      $ra, 4($sp)             # ARMAZENA NA PILHA ENDERECO DE RETORNO
 
-imprime_registro:
-            # carregamos o registro
+            # IMPRIME REGISTRO
             lw      $t0, 8($sp)             # $t0 = ENDERECO DO BUFFER
             lw      $t1, 0($t0)             # $t1 = CODIGO
 
@@ -91,11 +88,11 @@ main:
             slt     $t0, $v0, $zero         # SE DESCRITOR MENOR QUE 0
             bne     $t0, $zero, main_if_arquivo_nao_pode_ser_aberto 
 
-main_if_arquivo_aberto:
+            #ARQUIVO NAO DEU ERRO
             j       main_while     # sem erro de abertura: continua com o programa
 
 main_if_arquivo_nao_pode_ser_aberto:
-            # imprimimos uma string 
+            # IMPRIME STRING ERRO
             la      $a0, str_erro_abertura_arquivo  # $a0 = ENDERECO DA STRING ERRO
             li      $v0, 4                  # $v0 = SERVICO IMPRIME STRING
             syscall                
@@ -103,17 +100,24 @@ main_if_arquivo_nao_pode_ser_aberto:
             bne     $t0, $zero, fim_leitura_registros # ENCERRA PROCEDIMENTO MAIN
 
 main_while:   
-            j       main_while_verifica_condicao #LER UMA PALAVRA DE 4 BYTES
+        #LER UMA PALAVRA DE 4 BYTES
+        la      $t0, descritor_arquivo  # $t0 = ENDERECO ONDE SERA ARMAZENADO DESCRITOR DO ARQUIVO
+        lw      $a0, 0($t0)             # $a0 = DESCRITOR DO ARQUIVO
+        la      $a1, buffer_leitura     # $a1 = ENDERECO DO BUFFER DE LEITURA
+        jal     arquivo_leia_registro   # TENTAR LER 4 BYTES, $v0 RETORNA O NUMERO DE BYTES LIDOS
+        bne     $v0, $zero, main_while_codigo # SE NAO CHEGOU NO FIM DO ARQUIVO, ENTAO PROCESSA REGISTRO
+
+        j fim_leitura_registros #SE CHEGOU AO FIM DO ARQUIVO
 
 main_while_codigo:
-            # VERIFICA SE O NUMERO DE BYTES LIDOS FOI = 4
-            slti    $t0, $v0, 4                 	        # SE UM REGISTRO NAO PODE SER LIDO
-            bne     $t0, $zero,main_if_leitura_registro_erro    # ENCERRA O PROGRAMA
+        # VERIFICA SE O NUMERO DE BYTES LIDOS FOI = 4
+        slti    $t0, $v0, 4                 	        # SE UM REGISTRO NAO PODE SER LIDO
+        bne     $t0, $zero,main_if_leitura_registro_erro    # ENCERRA O PROGRAMA
 
-main_if_leitura_registro_ok:
-            la      $a0, buffer_leitura     # $a0 = ENDERECO DO BUFFER DE LEITURA
-            jal     registro_processa       # PROCESSA O REGISTRO LIDO DO ARQUIVO (PRINT CODIGO)
-            j      main_while_verifica_condicao # VAI PRO PROXIMO REGISTRO
+        #SE NAO DEU ERRO:
+        la      $a0, buffer_leitura     # $a0 = ENDERECO DO BUFFER DE LEITURA
+        jal     registro_processa       # PROCESSA O REGISTRO LIDO DO ARQUIVO (PRINT CODIGO)
+        j       main_while # VAI PRO PROXIMO REGISTRO
 
 main_if_leitura_registro_erro:
             la      $a0, str_erro_leitura_registro  # $a0 = ENDERECO DA STRING DE ERRO
@@ -121,15 +125,7 @@ main_if_leitura_registro_erro:
             syscall                         
             li      $v0, 1                  # $v0 = 1, VALOR DE RETORNO QUE INDICA QUE DEU ERRO
             bne     $t0, $zero, fim_leitura_registros # ENCERRA O PROCEDIMENTO            
-
-
-main_while_verifica_condicao:
-                la      $t0, descritor_arquivo  # $t0 = ENDERECO ONDE SERA ARMAZENADO DESCRITOR DO ARQUIVO
-                lw      $a0, 0($t0)             # $a0 = DESCRITOR DO ARQUIVO
-                la      $a1, buffer_leitura     # $a1 = ENDERECO DO BUFFER DE LEITURA
-                jal     arquivo_leia_registro   # TENTAR LER 4 BYTES, $v0 RETORNA O NUMERO DE BYTES LIDOS
-                bne     $v0, $zero, main_while_codigo # SE NAO CHEGOU NO FIM DO ARQUIVO, ENTAO PROCESSA REGISTRO
-
+                
 fim_leitura_registros:
             # FECHAMOS O ARQUIVO
             la      $t0, descritor_arquivo  # $t0 = ENDERECO DO DESCRITOR DO ARQUIVO
