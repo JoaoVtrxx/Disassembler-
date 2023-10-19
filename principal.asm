@@ -3,30 +3,36 @@
 
         ## arquivo ler
         descritor_arquivo: .word 0                  # descritor do arquivo: um inteiro nao negativo
-        nome_do_arquivo: .asciiz "notas.bin"        # nome do arquivo
+        nome_do_arquivo: .asciiz "arquivoLeitura.bin"        # nome do arquivo
         .align 2                                    
                                                     
         buffer_leitura: .space 32                   # buffer para a leitura do arquivo 
 
-        ### arquivo escrever
-        conteudoArq: .asciiz "Mensagem para ser escrita\n" #26 caracter
-        localArq: .asciiz "C:/Users/jdalp/Downloads/testeAssembly.txt"
-        descritor_arquivo_escrita: .word 0                 # descritor do arquivo escrita: um inteiro nao negativo
+        ################ DADOS ARQUIVO ESCRITA: ######################################
 
-        str_erro_abertura_arquivo: .asciiz "[ERRO] O arquivo nao pode ser aberto\n"
-        str_erro_leitura_registro: .asciiz "[ERRO] Erro de leitura do arquivo"
+        localArq: .asciiz "saida.txt"
+        descritor_arquivo_escrita: .word 0                                      # descritor do arquivo escrita: um inteiro nao negativo
 
-        ##################################### DECODIFICADOR ##################
-
+        str_erro_abertura_arquivo: .asciiz "O arquivo nao pode ser aberto\n"
+        str_erro_leitura_registro: .asciiz "Erro de leitura do arquivo"
         endereco_instrucoes: .word 0x00400000
+        endereco_instrucoes_string: .ascii "0xFFFFFFFF \0" 
+        codigo_hexadecimal_string: .ascii "0xFFFFFFFF \0"
+        imediato: .ascii "0xFFFFFFFF \0"
+        nova_linha: .asciiz "\n"
+        abre_parenteses:.asciiz "("
+        fecha_parenteses:.asciiz ")"
+
+        ###############  DECODIFICADOR ##################
+
         stringNaoAchouFuncao: .asciiz "Funcao nao encontrada... "
 
-	instruc1: .word 0	#$s0
-	instruc2: .word 0	#$s1
-	instruc3: .word 0	#$s2
-	instruc4: .word 0	#$s3
-	instruc5: .word 0	#$s4
-	instruc6: .word 0	#$s5
+        instrucaoTotal: .word 0
+	instruc_parte_1: .word 0	#$s0
+	instruc_parte_2: .word 0	#$s1
+	instruc_parte_3: .word 0	#$s2
+	instruc_parte_4: .word 0	#$s3
+	instruc_parte_5: .word 0	#$s4
 
         ## VETORES
 	
@@ -161,7 +167,6 @@
 	
 	.eqv PRINT_STRING 4
 	.eqv PRINT_HEX 34
-        
 
 .text
 
@@ -223,32 +228,40 @@ registro_processa:
    
         addiu   $sp, $sp, -12           # AJUSTAR A PILHA
         sw $ra, 4($sp)
-
-        move $t0, $a0             # $t0 = ENDERECO DO BUFFER
-
-        #PASSANDO CODIGO PARA REGISTRADOR $a1
-        lw  $a1, 0($t0) # $a1 = CODIGO
+        sw $a0, 8($sp)                  # 8($sp) = ENDERECO DO BUFFER
 
         #IMPRIME ENDERECO
         la $t0, endereco_instrucoes	
         lw $a0, 0($t0)
-        li $v0, 34
+        la $a1, endereco_instrucoes_string    # ENDERECO DA STRING
+
+        #TRADUZ HEXA PRA STRING
+        jal converte_hexa_string                # FUNCAO CONVERTE PARA STRING
+        
+        #ESCREVE NO ARQUIVO
+        la $t0, descritor_arquivo_escrita
+        lw $a0, 0($t0)
+        la $a1, endereco_instrucoes_string
+        li $a2, 11
+        li $v0, 15
         syscall
 
         #ADICIONA 4 NO ENDERECO
+        la $t0, endereco_instrucoes
+        lw $a0, 0($t0)
         addi $a0, $a0, 4
         sw $a0, 0($t0)
 
-        #IMPRIME ESPACO
-        li      $a0, ' '               # $a0 = ESPACO
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
-        syscall
+        lw $t0, 8($sp)                  #ENDERECO DO BUFFER
+        lw  $a1, 0($t0)                 # $a1 = CODIGO
+        la $t0, instrucaoTotal          # RECEBE ENDERECO DO CODIGO DA INSTRUCAO LIDA        
+        sw $a1, 0($t0)
 
    	#PEGAR OPCODE
         jal pega_opcode
 
-        la $s0, instruc1 #$S0 = ENDERECO DA INSTRUC1
-        sw $v0, 0($s0) #SALVANDO OPCODE EM INSTRUC1     
+        la $s0, instruc_parte_1 #$S0 = ENDERECO DA INSTRUC_parte_1
+        sw $v0, 0($s0) #SALVANDO OPCODE EM INSTRUC_parte_1     
         move $t0, $v0  #PASSANDO OPCODE PARA REGISTRADOR $T0
         
         beqz $t0, tipoR  # SE OPCODE == 0
@@ -321,7 +334,7 @@ pega_target:
 tipoR:
         jal pega_function  # PEGAR FUNCTION
         move $t0, $v0 	   # $T0 = RETORNO DA FUNCAO
-        sw $t0, 0($s0) 	   # STORE O VALOR DE T0 NA INSTRUC1
+        sw $t0, 0($s0) 	   # STORE O VALOR DE T0 NA INSTRUC_parte_1
 
         li $a2, 0 # CONTADOR = 0
         while0:
@@ -331,7 +344,7 @@ tipoR:
         j while0 
 
 tipoJ:
-        lw $t0, 0($s0) # $T0 = OPCODE DA INSTRUC1
+        lw $t0, 0($s0) # $T0 = OPCODE DA INSTRUC_parte_1
         li $a2, 1 # CONTADOR = 1
         while1:
                 bgt $a2, 0x39, naoAchou  # SE CONTADOR > 0X39 ENTAO NAO ACHOU
@@ -340,7 +353,7 @@ tipoJ:
         j while1
 		
 tipoI:
-        lw $t0, 0($s0) # $T0 = OPCODE DA INSTRUC1
+        lw $t0, 0($s0) # $T0 = OPCODE DA INSTRUC_parte_1
         li $a2, 1 # CONTADOR = 1
         while2:
                 bgt $a2, 0x39, naoAchou # SE CONTADOR > 0X39 ENTAO NAO ACHOU
@@ -357,42 +370,59 @@ VetorTipoJ:
         
         sw $t0, 0($s0)          #GUARDAMOS O ENDERECO DA STRING DA INSTRUCAO NA PILHA
         
-        jal pega_target        	#PEGAR TARGET
-        move $t0, $v0			#$T0 RECEBE O RETORNO DA FUNCAO
-        la $s1, instruc2 		# $S1 = ENDERECO DE INSTRUC2
-        sw $v0, 0($s1)			#GUARDA O TARGET NA INSTRUC2
+        jal pega_target        	        #PEGAR TARGET
+       
+        #TRADUZ CONSTANTE HEXA PRA STRING
+        move $a0, $v0			        #$T0 RECEBE O RETORNO DA FUNCAO
+        la $a1, imediato                        # ENDERECO DA STRING
 
-        j imprimeResultJ       #IMPRIME RESULTADO TIPO j
+        jal converte_hexa_string                # FUNCAO CONVERTE PARA STRING                
+        
+        la $t0, instrucaoTotal                  # RECEBE ENDERECO DO CODIGO DA INSTRUCAO LIDA         
+        lw $a1, 0($t0)
+
+        j imprimeResultJ                         #IMPRIME RESULTADO TIPO j
 
 VetorTipoI:
-        lw $s6, 0($s0)      # $S1 = VALOR DO OPCODE DA INSTRUC1
+        lw $s6, 0($s0)      # $S1 = VALOR DO OPCODE DA INSTRUC_parte_1
 
         la $t0, vetor_ponteiros # $T0 = ENDERECO BASE DO VETOR DE INSTRUCOES
         sub $a2, $a2, 1 		# INDICE = INDICE - 1
         sll $a2, $a2, 2			# INDICE * 4
         add $t0, $a2, $t0 		# $T0 = &VETOR[I]
         
-        sw $t0, 0($s0)   		# GUARDAMOS O ENDERECO DA STRING NA INSTRUC1
+        sw $t0, 0($s0)   		# GUARDAMOS O ENDERECO DA STRING NA INSTRUC_parte_1
         
         jal pega_rs				# PEGAR RS
         move $t0, $v0			# $T0 RECEBE O RETORNO DA FUNCAO
-        la $s1, instruc2 		# $S1 = ENDERECO DE INSTRUC2
-        sw $t0, 0($s1)			# GUARDA O RS NA INSTRUC2
+        la $s1, instruc_parte_2 		# $S1 = ENDERECO DE INSTRUC_parte_2
+        sw $t0, 0($s1)			# GUARDA O RS NA INSTRUC_parte_2
 
         jal pega_rt				# PEGAR RT
         move $t0, $v0			# $T0 RECEBE O RETORNO DA FUNCAO
-        la $s2, instruc3 		# $S2 = ENDERECO DE INSTRUC3
-        sw $t0, 0($s2)			# GUARDA O RT NA INSTRUC3
+        la $s2, instruc_parte_3 		# $S2 = ENDERECO DE INSTRUC_parte_3
+        sw $t0, 0($s2)			# GUARDA O RT NA INSTRUC_parte_3
 
         jal pega_constante		# PEGAR CONSTANTE
         move $t0, $v0			# $T0 RECEBE O RETORNO DA FUNCAO
-        la $s3, instruc4 		# $S3 = ENDERECO DE INSTRUC4
-        sw $t0, 0($s3)			# GUARDA O CONSTANTE NA INSTRUC4
+        la $s3, instruc_parte_4 		# $S3 = ENDERECO DE INSTRUC_parte_4
+        sw $t0, 0($s3)			# GUARDA O CONSTANTE NA INSTRUC_parte_4
         
         jal traduzRegistradorRS  # TRADUZ VALOR DO REGISTRADOR RS PARA STRING
         sw $v0, 0($s1)  	#GUARDAMOS O ENDERECO DA STRING DO REGISTRADOR NA INSTRUCT2
         jal traduzRegistradorRT	 # TRADUZ VALOR DO REGISTRADOR RT PARA STRING
         sw $v0, 0($s2)  	#GUARDAMOS O ENDERECO DA STRING DO REGISTRADOR NA INSTRUCT3
+
+        #TRADUZ CONSTANTE HEXA PRA STRING
+        la $t0, 0($s3)	
+        lw $a0, 0($t0)
+        la $a1, imediato        # ENDERECO DA STRING
+
+        jal converte_hexa_string                # FUNCAO CONVERTE PARA STRING
+        
+        la $t0, instrucaoTotal # RECEBE ENDERECO DO CODIGO DA INSTRUCAO LIDA
+        lw $a1, 0($t0)
+
 
         addi $s7, $zero, 1 # $S7 = 1
         beq $s6, $s7, imprimeResultI1 # IF($S6 == 1) IMPRIME RESULTADO FORMATO i1
@@ -424,22 +454,22 @@ VetorTipoR:
 
         jal pega_rs   	# PEGAR RS
         move $t0, $v0   # $T0 RECEBE O RETORNO DA FUNCAO
-        la $s1, instruc2 # $S1 = ENDERECO DE INSTRUC2
-        sw $t0, 0($s1) 	# GUARDA O RS NA INSTRUC2
+        la $s1, instruc_parte_2 # $S1 = ENDERECO DE INSTRUC_parte_2
+        sw $t0, 0($s1) 	# GUARDA O RS NA INSTRUC_parte_2
 
         jal pega_rt 	# PEGAR RT
         move $t0, $v0   # $T0 RECEBE O RETORNO DA FUNCAO
-        la $s2, instruc3 # $S2 = ENDERECO DE INSTRUC3
-        sw $t0, 0($s2)  # GUARDA O RT NA INSTRUC3
+        la $s2, instruc_parte_3 # $S2 = ENDERECO DE INSTRUC_parte_3
+        sw $t0, 0($s2)  # GUARDA O RT NA INSTRUC_parte_3
 
         jal pega_rd		# PEGAR RD
         move $t0, $v0 	# $T0 RECEBE O RETORNO DA FUNCAO
-        la $s3, instruc4 # $S3 = ENDERECO DE INSTRUC4
-        sw $t0, 0($s3) # GUARDA O RD NA INSTRUC4
+        la $s3, instruc_parte_4 # $S3 = ENDERECO DE INSTRUC_parte_4
+        sw $t0, 0($s3) # GUARDA O RD NA INSTRUC_parte_4
         
         jal pega_sa 	# PEGAR SA
         move $t0, $v0   # $T0 RECEBE O RETORNO DA FUNCAO
-        la $s4, instruc5 # $S4 = ENDERECO DE INSTRUC5
+        la $s4, instruc_parte_5 # $S4 = ENDERECO DE INSTRUC_parte_5
         sw $t0, 0($s4) # GUARDA O SA NA PILHA
 
         jal traduzRegistradorRS # TRADUZ VALOR DO REGISTRADOR RS PARA STRING
@@ -448,6 +478,16 @@ VetorTipoR:
         sw $v0, 0($s2)  	#GUARDAMOS O ENDERECO DA STRING DO REGISTRADOR NA INSTRUCT3
         jal traduzRegistradorRD # TRADUZ VALOR DO REGISTRADOR RD PARA STRING
         sw $v0, 0($s3)          #GUARDAMOS O ENDERECO DA STRING DO REGISTRADOR NA INSTRUCT4
+        
+        #TRADUZ HEXA SA PRA STRING
+        la $t0, 0($s4)	
+        lw $a0, 0($t0)
+        la $a1, imediato        # ENDERECO DA STRING
+
+        jal converte_hexa_string                # FUNCAO CONVERTE PARA STRING
+        
+        la $t0, instrucaoTotal                # RECEBE ENDERECO DO CODIGO DA INSTRUCAO LIDA        
+        lw $a1, 0($t0)
 
         addi $s7, $zero, 4 # $S7 = 4
         blt $s6, $s7, imprimeResultR1 # IF($S6 < 4) IMPRIME RESULTADO FORMATO R1
@@ -482,7 +522,7 @@ VetorTipoR:
         j fim_leitura_registros #ENCERRA O PROGRAMA
 
 traduzRegistradorRS:
-        lw $t0, 0($s1) # $T0 = RS DA INSTRUC2
+        lw $t0, 0($s1) # $T0 = RS DA INSTRUC_parte_2
 
         li $a2, 0 # CONTADOR = 0
         while3:
@@ -492,7 +532,7 @@ traduzRegistradorRS:
         j while3
 
 traduzRegistradorRT:
-        lw $t0, 0($s2) # $T0 = Rt DA INSTRUC3
+        lw $t0, 0($s2) # $T0 = Rt DA INSTRUC_parte_3
 
         li $a2, 0 # CONTADOR = 0
         while4:
@@ -598,48 +638,63 @@ fim_leitura_registros:
             jr	    $ra                     # RETORNAMOS AO PROCEDIMENTO CHAMADOR (INIT)
 
 imprimeResultR1:
+        #ESCREVE CODIGO NO ARQUIVO
+        move $a0, $a1
+        la $a1, codigo_hexadecimal_string   # ENDERECO DA STRING
 
-	#IMPRIME CODIGO	
-        move $a0, $a1 
-        li $v0, PRINT_HEX
-        syscall
+        #TRADUZ HEXA PRA STRING
+        jal converte_hexa_string                # FUNCAO CONVERTE PARA STRING
         
-        li     $a0, ' '               # $a0 = ESPACO
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
+        #ESCREVE NO ARQUIVO
+        la $t0, descritor_arquivo_escrita
+        lw $a0, 0($t0)
+        la $a1, codigo_hexadecimal_string
+        li $a2, 11
+        li $v0, 15
         syscall
 
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)
-        lw $a0, 0($t0)  
-        li $v0, PRINT_STRING
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s0)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
         syscall
         
         #IMPRIME RD 	
         lw $t0, 0($s3)
-        lw $a0, 0($t0) 
-        li $v0, PRINT_STRING
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s3)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
+        
         syscall
 
         #IMPRIME RT	
         lw $t0, 0($s2)
-        lw $a0, 0($t0)  
-        li $v0, PRINT_STRING
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s2)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
+        
         syscall	
         
-        #IMPRIME SA	
-        lw $a0, 0($s4)  
-        li $v0, PRINT_HEX
-        syscall
-
-        li      $a0, '\n'               # $a0 = NOVA LINHA
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
-        syscall
-
+        # IMPRIME SA	
+        la $a1, imediato
+        li $a2, 11
         li $v0, 15
-        la $t0, descritor_arquivo_escrita
-        lw $a0, 0($t0)
-        la $a1, conteudoArq
-        li $a2, 26
+        syscall
+
+        #NOVA LINHA
+        la $a1, nova_linha
+        li $a2, 1
+        li $v0, 15
         syscall
 
         lw      $ra, 4($sp)             # RESTAURA O ENDERECO DE RETORNO
@@ -647,48 +702,68 @@ imprimeResultR1:
         jr	    $ra                     # RETORNA AO PROCESSO CHAMADOR
 
 imprimeResultR2: 
-        #IMPRIME CODIGO	
-        move $a0, $a1 
-        li $v0, PRINT_HEX
+        #ESCREVE CODIGO NO ARQUIVO
+        move $a0, $a1
+        la $a1, codigo_hexadecimal_string   # ENDERECO DA STRING
+
+        #TRADUZ HEXA PRA STRING
+        jal converte_hexa_string                # FUNCAO CONVERTE PARA STRING
+        
+        #ESCREVE NO ARQUIVO
+        la $t0, descritor_arquivo_escrita
+        lw $a0, 0($t0)
+        la $a1, codigo_hexadecimal_string
+        li $a2, 11
+        li $v0, 15
         syscall
 
-        #IMPRIME ESPACO
-        li      $a0, ' '               # $a0 = ESPACO
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
-        syscall
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)
-        lw $a0, 0($t0)  
-        li $v0, PRINT_STRING
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s0)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
+        
         syscall
         
         #IMPRIME RD 	
         lw $t0, 0($s3)
-        lw $a0, 0($t0) 
-        li $v0, PRINT_STRING
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s3)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
+        
         syscall
 
         #IMPRIME RS	
         lw $t0, 0($s1)
-        lw $a0, 0($t0)
-        li $v0, PRINT_STRING
-        syscall	
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s1)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
+        
+        syscall
         
         #IMPRIME RT	
         lw $t0, 0($s2)
-        lw $a0, 0($t0)  
-        li $v0, PRINT_STRING
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s2)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
+        
         syscall	
 
-        li      $a0, '\n'               # $a0 = NOVA LINHA
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
-        syscall
-
+        la $a1, nova_linha
+        li $a2, 1
         li $v0, 15
-        la $t0, descritor_arquivo_escrita
-        lw $a0, 0($t0)
-        la $a1, conteudoArq
-        li $a2, 26
         syscall
 
         lw      $ra, 4($sp)             # RESTAURA O ENDERECO DE RETORNO
@@ -696,78 +771,101 @@ imprimeResultR2:
         jr	    $ra                     # RETORNA AO PROCESSO CHAMADOR
         
 imprimeResultR3: 
-        #IMPRIME CODIGO	
-        move $a0, $a1 
-        li $v0, PRINT_HEX
+        #ESCREVE CODIGO NO ARQUIVO
+        move $a0, $a1
+        la $a1, codigo_hexadecimal_string   # ENDERECO DA STRING
+
+        #TRADUZ HEXA PRA STRING
+        jal converte_hexa_string                # FUNCAO CONVERTE PARA STRING
+        
+        #ESCREVE NO ARQUIVO
+        la $t0, descritor_arquivo_escrita
+        lw $a0, 0($t0)
+        la $a1, codigo_hexadecimal_string
+        li $a2, 11
+        li $v0, 15
         syscall
 
-        #IMPRIME ESPACO
-        li      $a0, ' '               # $a0 = ESPACO
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
-        syscall
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)
-        lw $a0, 0($t0)  
-        li $v0, PRINT_STRING
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s0)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
         syscall
 
         #IMPRIME RS	
         lw $t0, 0($s1)
-        lw $a0, 0($t0)
-        li $v0, PRINT_STRING
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s1)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
         syscall
         
-        li      $a0, '\n'               # $a0 = NOVA LINHA
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
-        syscall	
-
+        la $a1, nova_linha
+        li $a2, 1
         li $v0, 15
-        la $t0, descritor_arquivo_escrita
-        lw $a0, 0($t0)
-        la $a1, conteudoArq
-        li $a2, 26
-        syscall
+        syscall	
 
         lw      $ra, 4($sp)             # RESTAURA O ENDERECO DE RETORNO
         addiu   $sp, $sp, 12            # RESTAURA PILhA
         jr	    $ra                     # RETORNA AO PROCESSO CHAMADOR
 imprimeResultR4: 
-        #IMPRIME CODIGO	
-        move $a0, $a1 
-        li $v0, PRINT_HEX
+        #ESCREVE CODIGO NO ARQUIVO
+        move $a0, $a1
+        la $a1, codigo_hexadecimal_string   # ENDERECO DA STRING
+
+        #TRADUZ HEXA PRA STRING
+        jal converte_hexa_string                # FUNCAO CONVERTE PARA STRING
+        
+        #ESCREVE NO ARQUIVO
+        la $t0, descritor_arquivo_escrita
+        lw $a0, 0($t0)
+        la $a1, codigo_hexadecimal_string
+        li $a2, 11
+        li $v0, 15
         syscall
 
-        #IMPRIME ESPACO
-        li      $a0, ' '               # $a0 = ESPACO
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
-        syscall
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)
-        lw $a0, 0($t0)  
-        li $v0, PRINT_STRING
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s0)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
+        
         syscall
         
         #IMPRIME RD 	
         lw $t0, 0($s3)
-        lw $a0, 0($t0) 
-        li $v0, PRINT_STRING
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s3)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
+        
         syscall
 
         #IMPRIME RS	
         lw $t0, 0($s1)
-        lw $a0, 0($t0)
-        li $v0, PRINT_STRING
-        syscall	
-        
-        li      $a0, '\n'               # $a0 = NOVA LINHA
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
-        syscall
-
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s1)
+        lw $a1, 0($t0)
+        move $a2, $v0
         li $v0, 15
-        la $t0, descritor_arquivo_escrita
-        lw $a0, 0($t0)
-        la $a1, conteudoArq
-        li $a2, 26
+        
+        syscall
+        
+        la $a1, nova_linha
+        li $a2, 1
+        li $v0, 15
         syscall
 
         lw      $ra, 4($sp)             # RESTAURA O ENDERECO DE RETORNO
@@ -775,163 +873,207 @@ imprimeResultR4:
         jr	    $ra                     # RETORNA AO PROCESSO CHAMADOR
 
 imprimeResultR5: 
-        #IMPRIME CODIGO	
-        move $a0, $a1 
-        li $v0, PRINT_HEX
-        syscall
+        #ESCREVE CODIGO NO ARQUIVO
+        move $a0, $a1
+        la $a1, codigo_hexadecimal_string   # ENDERECO DA STRING
 
-        #IMPRIME ESPACO
-        li      $a0, ' '               # $a0 = ESPACO
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
+        #TRADUZ HEXA PRA STRING
+        jal converte_hexa_string                # FUNCAO CONVERTE PARA STRING
+        
+        #ESCREVE NO ARQUIVO
+        la $t0, descritor_arquivo_escrita
+        lw $a0, 0($t0)
+        la $a1, codigo_hexadecimal_string
+        li $a2, 11
+        li $v0, 15
         syscall
 
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)
-        lw $a0, 0($t0)  
-        li $v0, PRINT_STRING
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s0)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
+        
         syscall
         
-        li      $a0, '\n'               # $a0 = NOVA LINHA
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
-        syscall
-
+        la $a1, nova_linha
+        li $a2, 1
         li $v0, 15
-        la $t0, descritor_arquivo_escrita
-        lw $a0, 0($t0)
-        la $a1, conteudoArq
-        li $a2, 26
         syscall
-
         lw      $ra, 4($sp)             # RESTAURA O ENDERECO DE RETORNO
         addiu   $sp, $sp, 12            # RESTAURA PILhA
         jr	    $ra                     # RETORNA AO PROCESSO CHAMADOR
 
 
 imprimeResultR6: 
-        #IMPRIME CODIGO	
-        move $a0, $a1 
-        li $v0, PRINT_HEX
-        syscall
+        #ESCREVE CODIGO NO ARQUIVO
+        move $a0, $a1
+        la $a1, codigo_hexadecimal_string   # ENDERECO DA STRING
 
-        #IMPRIME ESPACO
-        li      $a0, ' '               # $a0 = ESPACO
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
+        #TRADUZ HEXA PRA STRING
+        jal converte_hexa_string                # FUNCAO CONVERTE PARA STRING
+        
+        #ESCREVE NO ARQUIVO
+        la $t0, descritor_arquivo_escrita
+        lw $a0, 0($t0)
+        la $a1, codigo_hexadecimal_string
+        li $a2, 11
+        li $v0, 15
         syscall
 
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)
-        lw $a0, 0($t0)  
-        li $v0, PRINT_STRING
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s0)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
+        
         syscall
         
         #IMPRIME RD 	
         lw $t0, 0($s3)
-        lw $a0, 0($t0) 
-        li $v0, PRINT_STRING
-        syscall
-
-        li      $a0, '\n'               # $a0 = NOVA LINHA
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
-        syscall
-
-
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s3)
+        lw $a1, 0($t0)
+        move $a2, $v0
         li $v0, 15
-        la $t0, descritor_arquivo_escrita
-        lw $a0, 0($t0)
-        la $a1, conteudoArq
-        li $a2, 26
+        
+        syscall
+
+        la $a1, nova_linha
+        li $a2, 1
+        li $v0, 15
         syscall
 
         lw      $ra, 4($sp)             # RESTAURA O ENDERECO DE RETORNO
         addiu   $sp, $sp, 12            # RESTAURA PILhA
         jr	    $ra                     # RETORNA AO PROCESSO CHAMADOR
 imprimeResultR7: 
-        #IMPRIME CODIGO	
-        move  $a0, $a1 
-        li $v0, PRINT_HEX
-        syscall
+        #ESCREVE CODIGO NO ARQUIVO
+        move $a0, $a1
+        la $a1, codigo_hexadecimal_string   # ENDERECO DA STRING
 
-        #IMPRIME ESPACO
-        li      $a0, ' '               # $a0 = ESPACO
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
+        #TRADUZ HEXA PRA STRING
+        jal converte_hexa_string                # FUNCAO CONVERTE PARA STRING
+        
+        #ESCREVE NO ARQUIVO
+        la $t0, descritor_arquivo_escrita
+        lw $a0, 0($t0)
+        la $a1, codigo_hexadecimal_string
+        li $a2, 11
+        li $v0, 15
         syscall
 
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)
-        lw $a0, 0($t0)  
-        li $v0, PRINT_STRING
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s0)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
+        
         syscall
         
         #IMPRIME RS	
         lw $t0, 0($s1)
-        lw $a0, 0($t0)
-        li $v0, PRINT_STRING
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s1)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
+        
         syscall	
         
         #IMPRIME RT	
         lw $t0, 0($s2)
-        lw $a0, 0($t0)  
-        li $v0, PRINT_STRING
-        syscall	
-
-        li      $a0, '\n'               # $a0 = NOVA LINHA
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s2)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
+        
         syscall
 
+        la $a1, nova_linha
+        li $a2, 1
         li $v0, 15
-        la $t0, descritor_arquivo_escrita
-        lw $a0, 0($t0)
-        la $a1, conteudoArq
-        li $a2, 26
         syscall
 
         lw      $ra, 4($sp)             # RESTAURA O ENDERECO DE RETORNO
         addiu   $sp, $sp, 12            # RESTAURA PILhA
         jr	    $ra                     # RETORNA AO PROCESSO CHAMADOR
 imprimeResultR8: 
-        #IMPRIME CODIGO	
-        move  $a0, $a1 
-        li $v0, PRINT_HEX
-        syscall
+        #ESCREVE CODIGO NO ARQUIVO
+        move $a0, $a1
+        la $a1, codigo_hexadecimal_string   # ENDERECO DA STRING
 
-        #IMPRIME ESPACO
-        li      $a0, ' '               # $a0 = ESPACO
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
+        #TRADUZ HEXA PRA STRING
+        jal converte_hexa_string                # FUNCAO CONVERTE PARA STRING
+        
+        #ESCREVE NO ARQUIVO
+        la $t0, descritor_arquivo_escrita
+        lw $a0, 0($t0)
+        la $a1, codigo_hexadecimal_string
+        li $a2, 11
+        li $v0, 15
         syscall
 
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)
-        lw $a0, 0($t0)  
-        li $v0, PRINT_STRING
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s0)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
+        
         syscall
         
         #IMPRIME RD 	
         lw $t0, 0($s3)
-        lw $a0, 0($t0) 
-        li $v0, PRINT_STRING
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s3)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
+        
         syscall
 
         #IMPRIME RS	
         lw $t0, 0($s1)
-        lw $a0, 0($t0)
-        li $v0, PRINT_STRING
-        syscall	
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s1)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
+        
+        syscall
         
         #IMPRIME RT	
         lw $t0, 0($s2)
-        lw $a0, 0($t0)  
-        li $v0, PRINT_STRING
-        syscall	
-        
-        li      $a0, '\n'               # $a0 = NOVA LINHA
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
-        syscall
-
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s2)
+        lw $a1, 0($t0)
+        move $a2, $v0
         li $v0, 15
-        la $t0, descritor_arquivo_escrita
-        lw $a0, 0($t0)
-        la $a1, conteudoArq
-        li $a2, 26
+        
+        syscall
+        
+        la $a1, nova_linha
+        li $a2, 1
+        li $v0, 15
         syscall
 
         lw      $ra, 4($sp)             # RESTAURA O ENDERECO DE RETORNO
@@ -939,144 +1081,192 @@ imprimeResultR8:
         jr	    $ra                 # RETORNA AO PROCESSO CHAMADOR
 	
 imprimeResultI1: 
-	#IMPRIME CODIGO	
-        move $a0, $a1 
-        li $v0, PRINT_HEX
-        syscall
+        #ESCREVE CODIGO NO ARQUIVO
+        move $a0, $a1
+        la $a1, codigo_hexadecimal_string   # ENDERECO DA STRING
 
-        #IMPRIME ESPACO
-        li      $a0, ' '               # $a0 = ESPACO
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
+        #TRADUZ HEXA PRA STRING
+        jal converte_hexa_string                # FUNCAO CONVERTE PARA STRING
+        
+        #ESCREVE NO ARQUIVO
+        la $t0, descritor_arquivo_escrita
+        lw $a0, 0($t0)
+        la $a1, codigo_hexadecimal_string
+        li $a2, 11
+        li $v0, 15
         syscall
 
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)
-        lw $a0, 0($t0)  
-        li $v0, PRINT_STRING
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s0)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
+        
         syscall
 
         #IMPRIME RS	
         lw $t0, 0($s1)
-        lw $a0, 0($t0)  
-        li $v0, PRINT_STRING
-        syscall	
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s1)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
         
-        #IMPRIME CONSTANTE	
-        lw $a0, 0($s3) 
-        li $v0, 1
         syscall
+
+        #IMPRIME CONSTANTE	
+        la $a1, imediato
+        li $a2, 11
+        li $v0, 15
+        syscall	
 
         #IMPRIME PULA LINHA
-        li      $a0, '\n'               # $a0 = NOVA LINHA
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
+        la $a1, nova_linha
+        li $a2, 1
+        li $v0, 15
         syscall
         
-        li $v0, 15
-        la $t0, descritor_arquivo_escrita
-        lw $a0, 0($t0)
-        la $a1, conteudoArq
-        li $a2, 26
-        syscall
-
         lw      $ra, 4($sp)             # RESTAURA O ENDERECO DE RETORNO
         addiu   $sp, $sp, 12            # RESTAURA PILhA
         jr	    $ra                 # RETORNA AO PROCESSO CHAMADOR
 
-imprimeResultI2: 
-        #IMPRIME CODIGO	
-        move  $a0, $a1 
-        li $v0, PRINT_HEX
-        syscall
+imprimeResultI2:
+       #ESCREVE CODIGO NO ARQUIVO
+        move $a0, $a1
+        la $a1, codigo_hexadecimal_string   # ENDERECO DA STRING
 
-        #IMPRIME ESPACO
-        li      $a0, ' '               # $a0 = ESPACO
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
+        #TRADUZ HEXA PRA STRING
+        jal converte_hexa_string                # FUNCAO CONVERTE PARA STRING
+        
+        #ESCREVE NO ARQUIVO
+        la $t0, descritor_arquivo_escrita
+        lw $a0, 0($t0)
+        la $a1, codigo_hexadecimal_string
+        li $a2, 11
+        li $v0, 15
         syscall
 
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)
-        lw $a0, 0($t0)  
-        li $v0, PRINT_STRING
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s0)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
         syscall
 
         #IMPRIME RS	
         lw $t0, 0($s1)
-        lw $a0, 0($t0)  
-        li $v0, PRINT_STRING
-        syscall	
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s1)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
+        syscall
         
         #IMPRIME RT	
         lw $t0, 0($s2)
-        lw $a0, 0($t0) 
-        li $v0, PRINT_STRING
-        syscall	
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s2)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
+        syscall
 
-        
-        #IMPRIME CONSTANTE	
-        lw $a0, 0($s3) 
-        li $v0, 34
+        #CALCULA ENDERECO DE DESVIO
+        la $t0, 0($s3)	
+        lw $a1, 0($t0)
+
+        jal  calcula_endereco_desvio
+
+        #TRADUZ CONSTANTE HEXA PRA STRING
+        move $a0, $v0
+        la $a1, imediato            # ENDERECO DA STRING
+
+        jal converte_hexa_string    # FUNCAO CONVERTE PARA STRING
+
+        #IMPRIME CONSTANTE
+        la $t0, descritor_arquivo_escrita
+        lw $a0, 0($t0)	
+        la $a1, imediato
+        li $a2, 11
+        li $v0, 15
         syscall
         
         #IMPRIME PULA LINHA
-        li      $a0, '\n'               # $a0 = NOVA LINHA
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
-        syscall
-        
+        la $a1, nova_linha
+        li $a2, 1
         li $v0, 15
-        la $t0, descritor_arquivo_escrita
-        lw $a0, 0($t0)
-        la $a1, conteudoArq
-        li $a2, 26
         syscall
 
         lw      $ra, 4($sp)             # RESTAURA O ENDERECO DE RETORNO
-        addiu   $sp, $sp, 12            # RESTAURA PILhA
+        addiu   $sp, $sp, 12            # RESTAURA PILHA
         jr	    $ra                 # RETORNA AO PROCESSO CHAMADOR
 
 imprimeResultI3: 
-        #IMPRIME CODIGO	
-        move  $a0, $a1 
-        li $v0, PRINT_HEX
-        syscall
+       #ESCREVE CODIGO NO ARQUIVO
+        move $a0, $a1
+        la $a1, codigo_hexadecimal_string   # ENDERECO DA STRING
 
-        #IMPRIME ESPACO
-        li      $a0, ' '               # $a0 = ESPACO
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
+        #TRADUZ HEXA PRA STRING
+        jal converte_hexa_string                # FUNCAO CONVERTE PARA STRING
+        
+        #ESCREVE NO ARQUIVO
+        la $t0, descritor_arquivo_escrita
+        lw $a0, 0($t0)
+        la $a1, codigo_hexadecimal_string
+        li $a2, 11
+        li $v0, 15
         syscall
 
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)
-        lw $a0, 0($t0)  
-        li $v0, PRINT_STRING
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s0)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15  
         syscall
         
         #IMPRIME RT	
         lw $t0, 0($s2)
-        lw $a0, 0($t0) 
-        li $v0, PRINT_STRING
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s2)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15 
         syscall	
 
         #IMPRIME RS	
         lw $t0, 0($s1)
-        lw $a0, 0($t0)  
-        li $v0, PRINT_STRING
-        syscall	
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s1)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
+        
+        syscall
         
         #IMPRIME CONSTANTE	
-        lw $a0, 0($s3) 
-        li $v0, 1
+        la $a1, imediato
+        li $a2, 11
+        li $v0, 15
         syscall
         
-        #IMPRIME PULA LINHA
-        li      $a0, '\n'               # $a0 = NOVA LINHA
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
-        syscall
-
+        # IMPRIME PULA LINHA
+        la $a1, nova_linha
+        li $a2, 1
         li $v0, 15
-        la $t0, descritor_arquivo_escrita
-        lw $a0, 0($t0)
-        la $a1, conteudoArq
-        li $a2, 26
         syscall
 
         lw      $ra, 4($sp)             # RESTAURA O ENDERECO DE RETORNO
@@ -1084,43 +1274,53 @@ imprimeResultI3:
         jr	    $ra                 # RETORNA AO PROCESSO CHAMADOR
 
 imprimeResultI4: 
-        #IMPRIME CODIGO	
-        move  $a0, $a1 
-        li $v0, PRINT_HEX
-        syscall
+        #ESCREVE CODIGO NO ARQUIVO
+        move $a0, $a1
+        la $a1, codigo_hexadecimal_string   # ENDERECO DA STRING
 
-        #IMPRIME ESPACO
-        li      $a0, ' '               # $a0 = ESPACO
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
+        #TRADUZ HEXA PRA STRING
+        jal converte_hexa_string                # FUNCAO CONVERTE PARA STRING
+        
+        #ESCREVE NO ARQUIVO
+        la $t0, descritor_arquivo_escrita
+        lw $a0, 0($t0)
+        la $a1, codigo_hexadecimal_string
+        li $a2, 11
+        li $v0, 15
         syscall
 
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)
-        lw $a0, 0($t0)  
-        li $v0, PRINT_STRING
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s0)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
+        
         syscall
         
         #IMPRIME RT	
         lw $t0, 0($s2)
-        lw $a0, 0($t0) 
-        li $v0, PRINT_STRING
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s2)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
+        
         syscall	
         
         #IMPRIME CONSTANTE	
-        lw $a0, 0($s3)  
-        li $v0, 1
+        la $a1, imediato
+        li $a2, 11
+        li $v0, 15
         syscall
         
         #IMPRIME PULA LINHA
-        li      $a0, '\n'               # $a0 = NOVA LINHA
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
-        syscall
-        
+        la $a1, nova_linha
+        li $a2, 1
         li $v0, 15
-        la $t0, descritor_arquivo_escrita
-        lw $a0, 0($t0)
-        la $a1, conteudoArq
-        li $a2, 26
         syscall
 
         lw      $ra, 4($sp)             # RESTAURA O ENDERECO DE RETORNO
@@ -1128,59 +1328,76 @@ imprimeResultI4:
         jr	    $ra                 # RETORNA AO PROCESSO CHAMADOR
 
 imprimeResultI5: 
-        #IMPRIME CODIGO	
-        move  $a0, $a1 
-        li $v0, PRINT_HEX
-        syscall
+        #ESCREVE CODIGO NO ARQUIVO
+        move $a0, $a1
+        la $a1, codigo_hexadecimal_string   # ENDERECO DA STRING
 
-        #IMPRIME ESPACO
-        li      $a0, ' '               # $a0 = ESPACO
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
+        #TRADUZ HEXA PRA STRING
+        jal converte_hexa_string                # FUNCAO CONVERTE PARA STRING
+        
+        #ESCREVE NO ARQUIVO
+        la $t0, descritor_arquivo_escrita
+        lw $a0, 0($t0)
+        la $a1, codigo_hexadecimal_string
+        li $a2, 11
+        li $v0, 15
         syscall
 
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)
-        lw $a0, 0($t0)  
-        li $v0, PRINT_STRING
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s0)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
+        
         syscall
         
         #IMPRIME RT	
         lw $t0, 0($s2)
-        lw $a0, 0($t0) 
-        li $v0, PRINT_STRING
-        syscall	
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s2)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
+        
+        syscall
         
         #IMPRIME CONSTANTE	
-        lw $a0, 0($s3)  
-        li $v0, 1
+        la $a1, imediato
+        li $a2, 11
+        li $v0, 15
         syscall
 
         #IMPRIME (
-        li      $a0, '('               # $a0 = NOVA LINHA
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
+        la $a1, abre_parenteses
+        li $a2, 1
+        li $v0, 15
         syscall
 
         #IMPRIME RS	
         lw $t0, 0($s1)
-        lw $a0, 0($t0)  
-        li $v0, PRINT_STRING
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s1)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        addi $a2, $a2, -1     # SUBTRAI UM DO TAMANHO POIS HA UM ESPACO A MAIS NA STRING APOS O REGISTRADOR 
+        li $v0, 15
         syscall	
 
         #IMPRIME )
-        li      $a0, ')'               # $a0 = NOVA LINHA
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
-        syscall
-        
-        #IMPRIME PULA LINHA
-        li      $a0, '\n'               # $a0 = NOVA LINHA
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
-        syscall
-        
+        la $a1, fecha_parenteses
+        li $a2, 1
         li $v0, 15
-        la $t0, descritor_arquivo_escrita
-        lw $a0, 0($t0)
-        la $a1, conteudoArq
-        li $a2, 26
+        syscall
+        
+        # IMPRIME PULA LINHA
+        la $a1, nova_linha
+        li $a2, 1
+        li $v0, 15
         syscall
 
         lw      $ra, 4($sp)             # RESTAURA O ENDERECO DE RETORNO
@@ -1188,41 +1405,114 @@ imprimeResultI5:
         jr	    $ra                 # RETORNA AO PROCESSO CHAMADOR
 
 imprimeResultJ: 
-	#IMPRIME CODIGO	
-        move $a0, $a1 
-        li $v0, PRINT_HEX
-        syscall
+        #ESCREVE CODIGO NO ARQUIVO
+        move $a0, $a1
+        la $a1, codigo_hexadecimal_string   # ENDERECO DA STRING
 
-        #IMPRIME ESPACO
-        li      $a0, ' '               # $a0 = ESPACO
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
+        #TRADUZ HEXA PRA STRING
+        jal converte_hexa_string                # FUNCAO CONVERTE PARA STRING
+        
+        #ESCREVE NO ARQUIVO
+        la $t0, descritor_arquivo_escrita
+        lw $a0, 0($t0)
+        la $a1, codigo_hexadecimal_string
+        li $a2, 11
+        li $v0, 15
         syscall
 
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)
-        lw $a0, 0($t0)  
-        li $v0, PRINT_STRING
+        lw $a1, 0($t0)
+        jal strlen
+        lw $t0, 0($s0)
+        lw $a1, 0($t0)
+        move $a2, $v0
+        li $v0, 15
+        
         syscall
 
         #IMPRIME TARGET	
-        lw $a0, 0($s1)  
-        li $v0, PRINT_HEX
-        syscall
-        
-        li      $a0, '\n'               # $a0 = NOVA LINHA
-        li      $v0, 11                 # $v0 = IMPRIMIR CARACTER
-        syscall
-        
+        la $a1, imediato
+        li $a2, 11
         li $v0, 15
-        la $t0, descritor_arquivo_escrita
-        lw $a0, 0($t0)
-        la $a1, conteudoArq
-        li $a2, 26
         syscall
-
+        
+        la $a1, nova_linha
+        li $a2, 1
+        li $v0, 15
+        syscall
+        
         lw      $ra, 4($sp)             # RESTAURA O ENDERECO DE RETORNO
         addiu   $sp, $sp, 12            # RESTAURA PILhA
         jr	    $ra                 # RETORNA AO PROCESSO CHAMADOR
 
 
+strlen:
+
+        addi $v0, $zero, 0  # INICIALIZA $V0 EM 0 = TAMANHO STRING
+
+   next:
+        lb $t1, 0($a1)      # LER 1 BYTE DA STRING
+        beq $t1, $zero, return  # SE FOR '\0' RETORNA
+        addi $a1, $a1, 1    # SENAO LE PROXIMO BYTE
+        
+        addi $v0, $v0, 1    # TAMANHO = TAMANHO + 1
+        j next              # LER DE NOVO
+
+  return:
+        jr $ra               # RETORNA
       
+converte_hexa_string:
+        # Inteiro de entrada
+        move $t0, $a0  # RECEBE $a0
+        move $t3, $a1  # RECEBE $a1
+
+        # Inicialize os registradores
+        li $t1, 16        # Divisor (base 16)   
+        addi $t3, $t3, 10  # Avance para o final do buffer
+        sb $zero, -2($t3)  # Null-terminator
+        li $t5, 0 
+
+converte_loop:
+        # Verifica se terminamos
+        bge $t5, 8, fim_converte
+
+        # Divide o inteiro por 16
+        divu $t0, $t1
+
+        # Obtém o quociente (dígito hexadecimal)
+        mfhi $t4
+
+        # Converte o dígito em ASCII
+        addi $t4, $t4, 48  # 48 é o ASCII para '0'
+
+        # Ajusta para os dígitos A-F, se necessário
+        blt $t4, 58, adjust_hex_digits
+        addi $t4, $t4, 7
+
+adjust_hex_digits:
+        # Retrocede no buffer e armazena o dígito
+        addi $t3, $t3, -1
+        sb $t4, 0($t3)
+
+        # Atualiza o valor do inteiro para o quociente
+        mflo $t0
+        addi $t5, $t5, 1
+
+        j converte_loop
+fim_converte:
+        jr $ra
+
+calcula_endereco_desvio:
+
+        #PEGA PC
+        la $t0, endereco_instrucoes # ENDERECO DO ENDERECO ATUAL DE PC = PC + 4 POIS JA FOI ADICIONADO 4
+        lw $t0, 0($t0)              # VALOR DE PC + 4
+
+        move $t1, $a1               # IMEDIATO
+        sll $t1, $t1, 2             # IMEDIATO << 2
+
+        add $v0, $t0, $t1           # CONSTANTE =  (PC + 4) + IMEDIATO << 2
+
+        jr $ra
+
