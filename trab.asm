@@ -173,52 +173,52 @@
 .text
 
 init:
-            jal     main                    # EXECUTA PROCEDIMENTO PRINCIPAL
+        jal     main                    # EXECUTA PROCEDIMENTO PRINCIPAL
 finit:
-            move	$a0, $v0            # $a0 = CODIGO DE RETORNO DO PROGRAMA
-            li      $v0, 17                 # $v0 = SERVICO EXIT 2
-            syscall                         # CHAMADA AO SISTEMA            
+        move	$a0, $v0            # $a0 = CODIGO DE RETORNO DO PROGRAMA
+        li      $v0, 17                 # $v0 = SERVICO EXIT 2
+        syscall                         # CHAMADA AO SISTEMA            
 
 arquivo_abrir_leitura:
 
-            li      $a1, 0                  # $a1 = FLAG = 0: ABRIR ARQUIVO PARA LEITURA
-            li      $a2, 0                  # $a2 = MODO (NAO USADO)
-            li      $v0, ABRE_ARQUIVO       # $v0 = SERVICO 13: ABRIR ARQUIVO PARA LEITURA OU ESCRUTA
-            syscall                         # CHAMADA AO SISTEMA
+        li      $a1, 0                  # $a1 = FLAG = 0: ABRIR ARQUIVO PARA LEITURA
+        li      $a2, 0                  # $a2 = MODO (NAO USADO)
+        li      $v0, ABRE_ARQUIVO       # $v0 = SERVICO 13: ABRIR ARQUIVO PARA LEITURA OU ESCRUTA
+        syscall                         # CHAMADA AO SISTEMA
 
-            jr	    $ra                     # RETORNA AO PROCEDIMENTO CHAMADOR
+        jr	    $ra                     # RETORNA AO PROCEDIMENTO CHAMADOR
 
 arquivo_abrir_escrita:
 
-           li $v0, ABRE_ARQUIVO             # $v0 = SERVICO 13: ABRIR ARQUIVO PARA LEITURA OU ESCRUTA  
-           la $a1, 1                        # $a1 = FLAG = 1: ABRIR ARQUIVO PARA ESCRITA
-           syscall                          # CHAMADA AO SISTEMA
+        li $v0, ABRE_ARQUIVO             # $v0 = SERVICO 13: ABRIR ARQUIVO PARA LEITURA OU ESCRUTA  
+        la $a1, 1                        # $a1 = FLAG = 1: ABRIR ARQUIVO PARA ESCRITA
+        syscall                          # CHAMADA AO SISTEMA
 
-           jr	    $ra                     # RETORNA AO PROCEDIMENTO CHAMADOR
+        jr	    $ra                     # RETORNA AO PROCEDIMENTO CHAMADOR
 
 arquivo_fechar:
 
-            la      $t0, descritor_arquivo_leitura # $t0 = ENDERECO DO DESCRITOR DO ARQUIVO LEITURA
-            lw      $a0, 0($t0)                    # $a0 = DESCRITOR DO ARQUIVO LEITURA
-            li      $v0, 16                        # $v0 = SERVICO 16: FECHA O ARQUIVO COM DESCRITOR EM $a0
-            syscall                                # CHAMADA AO SISTEMA
+        la      $t0, descritor_arquivo_leitura # $t0 = ENDERECO DO DESCRITOR DO ARQUIVO LEITURA
+        lw      $a0, 0($t0)                    # $a0 = DESCRITOR DO ARQUIVO LEITURA
+        li      $v0, 16                        # $v0 = SERVICO 16: FECHA O ARQUIVO COM DESCRITOR EM $a0
+        syscall                                # CHAMADA AO SISTEMA
 
-            la $t0, descritor_arquivo_escrita      # $t0 = ENDERECO DO DESCRITOR DO ARQUIVO ESCRITA
-            lw $a0, 0($t0)                         # $a0 = DESCRITOR DO ARQUIVO ESCRITA
-            li $v0, 16                             # $v0 = SERVICO 16: FECHA O ARQUIVO COM DESCRITOR EM $a0
-            syscall                                # CHAMADA AO SISTEMA
+        la $t0, descritor_arquivo_escrita      # $t0 = ENDERECO DO DESCRITOR DO ARQUIVO ESCRITA
+        lw $a0, 0($t0)                         # $a0 = DESCRITOR DO ARQUIVO ESCRITA
+        li $v0, 16                             # $v0 = SERVICO 16: FECHA O ARQUIVO COM DESCRITOR EM $a0
+        syscall                                # CHAMADA AO SISTEMA
 
-            jr	    $ra                            # RETORNA AO PROCEDIMENTO CHAMADOR       
+        jr	    $ra                            # RETORNA AO PROCEDIMENTO CHAMADOR       
 
 arquivo_leia_registro:
 
-            lw      $a0, 0($t0)                    # $a0 = ENDERECO DESCRITOR DO ARQUIVO 
-            la	    $a1, buffer_leitura            # $a1 = ENDERECO DO BUFFER COM OS DADOS A SEREM ESCRITOS
-            li      $a2, 4                         # $a2 = NUMERO DE BYTES QUE DEVEM SER LIDOS
-            li      $v0, 14                        # $v0 = SERVICO PARA LER ARQUIVO
-            syscall                         
+        lw      $a0, 0($t0)                    # $a0 = ENDERECO DESCRITOR DO ARQUIVO 
+        la	    $a1, buffer_leitura            # $a1 = ENDERECO DO BUFFER COM OS DADOS A SEREM ESCRITOS
+        li      $a2, 4                         # $a2 = NUMERO DE BYTES QUE DEVEM SER LIDOS
+        li      $v0, 14                        # $v0 = SERVICO PARA LER ARQUIVO
+        syscall                         
 
-            jr	    $ra                            # RETORNA AO PROCEDIMENTO CHAMADOR
+        jr	    $ra                            # RETORNA AO PROCEDIMENTO CHAMADOR
 
 registro_processa:
    
@@ -525,41 +525,41 @@ retornaRegistrador:
 
 main:
 
-            addiu   $sp, $sp, -8                                        # AJUSTA A PILHA
-            sw	    $ra, 4($sp)                                         # ARMAZENA $RA DE INIT NA PILHA
-            sw	    $zero, 0($sp)                                       # CODIGO DE RETORNO = 0 = SUCESSO
+        addiu   $sp, $sp, -8                                        # AJUSTA A PILHA
+        sw	    $ra, 4($sp)                                         # ARMAZENA $RA DE INIT NA PILHA
+        sw	    $zero, 0($sp)                                       # CODIGO DE RETORNO = 0 = SUCESSO
 
-            # ABRE O ARQUIVO PARA LEITURA
-            la	    $a0, nome_do_arquivo                                # $a0 = ENDERECO DA STRING COM NOME DO ARQUIVO
-            jal     arquivo_abrir_leitura                               # PROCEDIMENTO ABRE O ARQUIVO PARA LEITURA
-            la      $t0, descritor_arquivo_leitura                      # $t0 = ENDERECO DE ONDE ARMAZENAR O DESCRITOR DO ARQUIVO
-            sw      $v0, 0($t0)                                         # ARMAZENA O DESCRITOR DO ARQUIVO ACHADO 
+        # ABRE O ARQUIVO PARA LEITURA
+        la	    $a0, nome_do_arquivo                                # $a0 = ENDERECO DA STRING COM NOME DO ARQUIVO
+        jal     arquivo_abrir_leitura                               # PROCEDIMENTO ABRE O ARQUIVO PARA LEITURA
+        la      $t0, descritor_arquivo_leitura                      # $t0 = ENDERECO DE ONDE ARMAZENAR O DESCRITOR DO ARQUIVO
+        sw      $v0, 0($t0)                                         # ARMAZENA O DESCRITOR DO ARQUIVO ACHADO 
 
-            # SE NAO FOI POSSIVEL ABRIR TRATA  O ERRO
-            slt     $t0, $v0, $zero                                     # SE DESCRITOR MENOR QUE 0
-            bne     $t0, $zero, main_if_arquivo_nao_pode_ser_aberto     # FUNCAO TRATA ERRO
+        # SE NAO FOI POSSIVEL ABRIR TRATA  O ERRO
+        slt     $t0, $v0, $zero                                     # SE DESCRITOR MENOR QUE 0
+        bne     $t0, $zero, main_if_arquivo_nao_pode_ser_aberto     # FUNCAO TRATA ERRO
 
-            #ABRIR ARQUIVO ESCRITA
-            la $a0, localArq                                            # $a0 = ENDERECO DA STRING COM LOCAL DO ARQUIVO
-            jal arquivo_abrir_escrita                                   # PROCEDIMENTO ABRE O ARQUIVO PARA ESCRITA
-            la $t0, descritor_arquivo_escrita                           # $t0 = ENDERECO DE ONDE ARMAZENAR O DESCRITOR DO ARQUIVO
-            sw $v0, 0($t0)                                              # ARMAZENA O DESCRITOR DO ARQUIVO ACHADO
+        #ABRIR ARQUIVO ESCRITA
+        la $a0, localArq                                            # $a0 = ENDERECO DA STRING COM LOCAL DO ARQUIVO
+        jal arquivo_abrir_escrita                                   # PROCEDIMENTO ABRE O ARQUIVO PARA ESCRITA
+        la $t0, descritor_arquivo_escrita                           # $t0 = ENDERECO DE ONDE ARMAZENAR O DESCRITOR DO ARQUIVO
+        sw $v0, 0($t0)                                              # ARMAZENA O DESCRITOR DO ARQUIVO ACHADO
 
-            # SE NAO FOI POSSIVEL ABRIR TRATA  O ERRO
-            slt     $t0, $v0, $zero                                     # SE DESCRITOR MENOR QUE 0
-            bne     $t0, $zero, main_if_arquivo_nao_pode_ser_aberto     # FUNCAO TRATA ERRO
+        # SE NAO FOI POSSIVEL ABRIR TRATA  O ERRO
+        slt     $t0, $v0, $zero                                     # SE DESCRITOR MENOR QUE 0
+        bne     $t0, $zero, main_if_arquivo_nao_pode_ser_aberto     # FUNCAO TRATA ERRO
 
-            #ARQUIVO NAO DEU ERRO
-            j       main_while                                          # SEM ERRO DE ABRTURA
+        #ARQUIVO NAO DEU ERRO
+        j       main_while                                          # SEM ERRO DE ABRTURA
 
 main_if_arquivo_nao_pode_ser_aberto:
-            # IMPRIME STRING ERRO
+        # IMPRIME STRING ERRO
 
-            la      $a0, str_erro_abertura_arquivo      # $a0 = ENDERECO DA STRING ERRO
-            li      $v0, 4                              # $v0 = SERVICO IMPRIME STRING
-            syscall                
-            li      $v0, 1                              # $v0 = 1, VALOR DO RETORNO QUE DIZ QUE DEU ERRO
-            bne     $t0, $zero, fim_leitura_registros   # ENCERRA PROCEDIMENTO MAIN
+        la      $a0, str_erro_abertura_arquivo      # $a0 = ENDERECO DA STRING ERRO
+        li      $v0, 4                              # $v0 = SERVICO IMPRIME STRING
+        syscall                
+        li      $v0, 1                              # $v0 = 1, VALOR DO RETORNO QUE DIZ QUE DEU ERRO
+        bne     $t0, $zero, fim_leitura_registros   # ENCERRA PROCEDIMENTO MAIN
 
 main_while:   
         #LER UMA PALAVRA DE 4 BYTES
@@ -582,20 +582,20 @@ main_while_codigo:
         j       main_while                                       # VAI PARA A PROXIMA LEITURA
 
 main_if_leitura_registro_erro:
-            la      $a0, str_erro_leitura_registro       # $a0 = ENDERECO DA STRING DE ERRO
-            li      $v0, 4                               # $v0 = IMPRIME STRING
-            syscall                         
-            li      $v0, 1                              # $v0 = 1, VALOR DE RETORNO QUE INDICA QUE DEU ERRO
-            bne     $t0, $zero, fim_leitura_registros   # ENCERRA O PROCEDIMENTO            
+        la      $a0, str_erro_leitura_registro       # $a0 = ENDERECO DA STRING DE ERRO
+        li      $v0, 4                               # $v0 = IMPRIME STRING
+        syscall                         
+        li      $v0, 1                              # $v0 = 1, VALOR DE RETORNO QUE INDICA QUE DEU ERRO
+        bne     $t0, $zero, fim_leitura_registros   # ENCERRA O PROCEDIMENTO            
                 
 fim_leitura_registros:
-            # FECHAMOS O ARQUIVO
-            jal     arquivo_fechar          # FECHAMOS O ARQUIVO
+        # FECHAMOS O ARQUIVO
+        jal     arquivo_fechar          # FECHAMOS O ARQUIVO
 
-            lw      $ra, 4($sp)             # RESTAURA ENDERECO DE RETORNO PARA INIT
-            lw      $v0, 0($sp)             # $v0 = CODIGO DE RETORNO DO PROCEDIMENTO: 0 = SUCESSO
-            addiu   $sp, $sp, 8             # RESTAURA PILHA
-            jr	    $ra                     # RETORNAMOS AO PROCEDIMENTO CHAMADOR (INIT)
+        lw      $ra, 4($sp)             # RESTAURA ENDERECO DE RETORNO PARA INIT
+        lw      $v0, 0($sp)             # $v0 = CODIGO DE RETORNO DO PROCEDIMENTO: 0 = SUCESSO
+        addiu   $sp, $sp, 8             # RESTAURA PILHA
+        jr	    $ra                     # RETORNAMOS AO PROCEDIMENTO CHAMADOR (INIT)
 
 imprimeResultR1:
         #ESCREVE CODIGO NO ARQUIVO
