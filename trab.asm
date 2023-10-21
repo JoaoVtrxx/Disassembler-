@@ -134,38 +134,38 @@
 	vetor_functions: .word func0, func1, func2, func3, func4, func5, func6, func7, func8, func9, func10, func11, func12, func13, func14, func15, func16, func17, func18, func19, func20, func21, func22, func23, func24, func25, func26, func27, func28, func29, func30, func31, func32, func33, func34, func35, func36, func37, func38, func39, func40, func41, func42, func43
 	
 	registradores:
-	reg0: .ascii "$zero \0"
-	reg1: .ascii "$at \0"
-	reg2: .ascii "$v0 \0"
-	reg3: .ascii "$v0 \0"
-	reg4: .ascii "$a0 \0"
-	reg5: .ascii "$a1 \0"
-	reg6: .ascii "$a2 \0"
-	reg7: .ascii "$a3 \0"
-	reg8: .ascii "$t0 \0"
-	reg9: .ascii "$t1 \0"
-	reg10: .ascii "$t2 \0"
-	reg11: .ascii "$t3 \0"
-	reg12: .ascii "$t4 \0"
-	reg13: .ascii "$t5 \0"
-	reg14: .ascii "$t6 \0"
-	reg15: .ascii "$t7 \0"
-	reg16: .ascii "$s0 \0"
-	reg17: .ascii "$s1 \0"
-	reg18: .ascii "$s2 \0"
-	reg19: .ascii "$s3 \0"
-	reg20: .ascii "$s4 \0"
-	reg21: .ascii "$s5 \0"
-	reg22: .ascii "$s6 \0"
-	reg23: .ascii "$s7 \0"
-	reg24: .ascii "$t8 \0"
-	reg25: .ascii "$t9 \0"
+	reg0: .ascii "$zero, \0"
+	reg1: .ascii "$at, \0"
+	reg2: .ascii "$v0, \0"
+	reg3: .ascii "$v1, \0"
+	reg4: .ascii "$a0, \0"
+	reg5: .ascii "$a1, \0"
+	reg6: .ascii "$a2, \0"
+	reg7: .ascii "$a3, \0"
+	reg8: .ascii "$t0, \0"
+	reg9: .ascii "$t1, \0"
+	reg10: .ascii "$t2, \0"
+	reg11: .ascii "$t3, \0"
+	reg12: .ascii "$t4, \0"
+	reg13: .ascii "$t5, \0"
+	reg14: .ascii "$t6, \0"
+	reg15: .ascii "$t7, \0"
+	reg16: .ascii "$s0, \0"
+	reg17: .ascii "$s1, \0"
+	reg18: .ascii "$s2, \0"
+	reg19: .ascii "$s3, \0"
+	reg20: .ascii "$s4, \0"
+	reg21: .ascii "$s5, \0"
+	reg22: .ascii "$s6, \0"
+	reg23: .ascii "$s7, \0"
+	reg24: .ascii "$t8, \0"
+	reg25: .ascii "$t9, \0"
 	reg26: .ascii "n existe \0"
 	reg27: .ascii "n existe \0"
-	reg28: .ascii "$gp \0"
-	reg29: .ascii "$sp \0"
-	reg30: .ascii "$fp \0"
-	reg31: .ascii "$ra \0"
+	reg28: .ascii "$gp, \0"
+	reg29: .ascii "$sp, \0"
+	reg30: .ascii "$fp, \0"
+	reg31: .ascii "$ra, \0"
 	vetor_registradores: .word reg0, reg1, reg2, reg3, reg4, reg5, reg6, reg7, reg8, reg9, reg10, reg11, reg12, reg13, reg14, reg15, reg16, reg17, reg18, reg19, reg20, reg21, reg22, reg23, reg24, reg25, reg26, reg27, reg28, reg29, reg30, reg31
 
         .eqv ESCREVE_ARQUIVO 15
@@ -272,7 +272,7 @@ codigo_processa:
 
    	#PEGAR OPCODE
         jal pega_opcode      
-        
+
         la $s0, instruc_parte_1               # $S0 = ENDERECO DE "instruc_parte_1"
         sw $v0, 0($s0)                        # SALVA OPCODE EM "instruc_parte_1"     
         move $t0, $v0                         # $T0 = OPCODE
@@ -705,6 +705,7 @@ imprimeResultR2:
         lw $t0, 0($s2)                          # $t0 = ENDERECO DA STRING DE $s0
         lw $a1, 0($t0)                          # $a1 = ENDERECO DA STRING A SER ESCRITA
         move $a2, $v0                           # $a2 = TAMANHO DA STRING (RETORNO STRLEN)
+        addi $a2, $a2, -2                       # -2 DO TAMANHO, POIS HA UM ESPACO A MAIS E VIRGULA NA STRING APOS O REGISTRADOR
         li $v0, ESCREVE_ARQUIVO                 # $v0 = SERVICO 15: ESCREVER
         syscall	                                # CHAMADA AO SISTEMA
 
@@ -738,7 +739,8 @@ imprimeResultR3:
         jal strlen                              # CALCULA TAMANHO DA STRING
         lw $t0, 0($s1)                          # $t0 = ENDERECO DA STRING DE $s3
         lw $a1, 0($t0)                          # $a1 = ENDERECO DA STRING A SER ESCRITA
-        move $a2, $v0                           # $a2 = TAMANHO DA STRING (RETORNO STRLEN)                          
+        move $a2, $v0                           # $a2 = TAMANHO DA STRING (RETORNO STRLEN)
+        addi $a2, $a2, -2                       # -2 DO TAMANHO, POIS HA UM ESPACO A MAIS E VIRGULA NA STRING APOS O REGISTRADOR                          
         li $v0, ESCREVE_ARQUIVO                 # $v0 = SERVICO 15: ESCREVER
         syscall                                 # CHAMADA AO SISTEMA
         
@@ -781,7 +783,8 @@ imprimeResultR4:
         jal strlen                              # CALCULA TAMANHO DA STRING
         lw $t0, 0($s1)                          # $t0 = ENDERECO DA STRING DE $s3
         lw $a1, 0($t0)                          # $a1 = ENDERECO DA STRING A SER ESCRITA
-        move $a2, $v0                           # $a2 = TAMANHO DA STRING (RETORNO STRLEN)                          
+        move $a2, $v0                           # $a2 = TAMANHO DA STRING (RETORNO STRLEN)
+        addi $a2, $a2, -2                       # -2 DO TAMANHO, POIS HA UM ESPACO A MAIS E VIRGULA NA STRING APOS O REGISTRADOR                          
         li $v0, ESCREVE_ARQUIVO                 # $v0 = SERVICO 15: ESCREVER
         syscall                                 # CHAMADA AO SISTEMA
         
@@ -841,6 +844,7 @@ imprimeResultR6:
         lw $t0, 0($s3)                          # $t0 = ENDERECO DA STRING DE $s0
         lw $a1, 0($t0)                          # $a1 = ENDERECO DA STRING A SER ESCRITA
         move $a2, $v0                           # $a2 = TAMANHO DA STRING (RETORNO STRLEN)
+        addi $a2, $a2, -2                       # -2 DO TAMANHO, POIS HA UM ESPACO A MAIS E VIRGULA NA STRING APOS O REGISTRADOR
         li $v0, ESCREVE_ARQUIVO                 # $v0 = SERVICO 15: ESCREVER
         syscall                                 # CHAMADA AO SISTEMA
 
@@ -884,6 +888,7 @@ imprimeResultR7:
         lw $t0, 0($s2)                          # $t0 = ENDERECO DA STRING DE $s0
         lw $a1, 0($t0)                          # $a1 = ENDERECO DA STRING A SER ESCRITA
         move $a2, $v0                           # $a2 = TAMANHO DA STRING (RETORNO STRLEN)
+        addi $a2, $a2, -2                       # -2 DO TAMANHO, POIS HA UM ESPACO A MAIS E VIRGULA NA STRING APOS O REGISTRADOR
         li $v0, ESCREVE_ARQUIVO                 # $v0 = SERVICO 15: ESCREVER
         syscall	                                # CHAMADA AO SISTEMA
 
@@ -937,6 +942,7 @@ imprimeResultR8:
         lw $t0, 0($s2)                          # $t0 = ENDERECO DA STRING DE $s0
         lw $a1, 0($t0)                          # $a1 = ENDERECO DA STRING A SER ESCRITA
         move $a2, $v0                           # $a2 = TAMANHO DA STRING (RETORNO STRLEN)
+        addi $a2, $a2, -2                       # -2 DO TAMANHO, POIS HA UM ESPACO A MAIS E VIRGULA NA STRING APOS O REGISTRADOR
         li $v0, ESCREVE_ARQUIVO                 # $v0 = SERVICO 15: ESCREVER
         syscall	                                # CHAMADA AO SISTEMA
         
@@ -1169,7 +1175,7 @@ imprimeResultI5:
         
         #IMPRIME CONSTANTE	
         la $a1, imediato                        # $a1 = ENDERECO DA STRING A SER ESCRITA
-        li $a2, 11                              # NUMERO DE BYTES ESCRITOS
+        li $a2, 10                              # NUMERO DE BYTES ESCRITOS
         li $v0, ESCREVE_ARQUIVO                 # $v0 = SERVICO 15: ESCREVER
         syscall                                 # CHAMADA AO SISTEMA
 
@@ -1186,7 +1192,7 @@ imprimeResultI5:
         lw $t0, 0($s1)                          # $t0 = ENDERECO DA STRING DE $s3
         lw $a1, 0($t0)                          # $a1 = ENDERECO DA STRING A SER ESCRITA
         move $a2, $v0                           # $a2 = TAMANHO DA STRING (RETORNO STRLEN)      
-        addi $a2, $a2, -1                       # -1 DO TAMANHO, POIS HA UM ESPACO A MAIS NA STRING APOS O REGISTRADOR                     
+        addi $a2, $a2, -2                       # -2 DO TAMANHO, POIS HA UM ESPACO A MAIS E VIRGULA NA STRING APOS O REGISTRADOR                     
         li $v0, ESCREVE_ARQUIVO                 # $v0 = SERVICO 15: ESCREVER
         syscall                                 # CHAMADA AO SISTEMA	
 
