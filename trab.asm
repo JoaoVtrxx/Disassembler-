@@ -210,7 +210,7 @@ arquivo_fechar:
 
         jr	    $ra                            # RETORNA AO PROCEDIMENTO CHAMADOR       
 
-arquivo_leia_registro:
+arquivo_leia_codigo:
 
         lw      $a0, 0($t0)                    # $a0 = ENDERECO DESCRITOR DO ARQUIVO 
         la	    $a1, buffer_leitura            # $a1 = ENDERECO DO BUFFER COM OS DADOS A SEREM ESCRITOS
@@ -220,7 +220,7 @@ arquivo_leia_registro:
 
         jr	    $ra                            # RETORNA AO PROCEDIMENTO CHAMADOR
 
-registro_processa:
+codigo_processa:
    
         addiu   $sp, $sp, -12                 # AJUSTAR A PILHA
         sw $ra, 4($sp)                        # 4($sp) = ENDERECO DE RETORNO PRINCIPAL
@@ -537,7 +537,7 @@ main:
 
         # SE NAO FOI POSSIVEL ABRIR TRATA  O ERRO
         slt     $t0, $v0, $zero                                     # SE DESCRITOR MENOR QUE 0
-        bne     $t0, $zero, main_if_arquivo_nao_pode_ser_aberto     # FUNCAO TRATA ERRO
+        bne     $t0, $zero, se_arquivo_nao_pode_ser_aberto     # FUNCAO TRATA ERRO
 
         #ABRIR ARQUIVO ESCRITA
         la $a0, localArq                                            # $a0 = ENDERECO DA STRING COM LOCAL DO ARQUIVO
@@ -547,55 +547,55 @@ main:
 
         # SE NAO FOI POSSIVEL ABRIR TRATA  O ERRO
         slt     $t0, $v0, $zero                                     # SE DESCRITOR MENOR QUE 0
-        bne     $t0, $zero, main_if_arquivo_nao_pode_ser_aberto     # FUNCAO TRATA ERRO
+        bne     $t0, $zero, se_arquivo_nao_pode_ser_aberto     # FUNCAO TRATA ERRO
 
         #ARQUIVO NAO DEU ERRO
         j       main_while                                          # SEM ERRO DE ABRTURA
 
-main_if_arquivo_nao_pode_ser_aberto:
+se_arquivo_nao_pode_ser_aberto:
         # IMPRIME STRING ERRO
 
         la      $a0, str_erro_abertura_arquivo      # $a0 = ENDERECO DA STRING ERRO
         li      $v0, 4                              # $v0 = SERVICO IMPRIME STRING
         syscall                
         li      $v0, 1                              # $v0 = 1, VALOR DO RETORNO QUE DIZ QUE DEU ERRO
-        bne     $t0, $zero, fim_leitura_registros   # ENCERRA PROCEDIMENTO MAIN
+        bne     $t0, $zero, fim_leitura_codigo   # ENCERRA PROCEDIMENTO MAIN
 
 main_while:   
         #LER UMA PALAVRA DE 4 BYTES
         la      $t0, descritor_arquivo_leitura  # $t0 = ENDERECO ONDE SERA ARMAZENADO DESCRITOR DO ARQUIVO
         lw      $a0, 0($t0)                     # $a0 = DESCRITOR DO ARQUIVO
         la      $a1, buffer_leitura             # $a1 = ENDERECO DO BUFFER DE LEITURA
-        jal     arquivo_leia_registro           # TENTAR LER 4 BYTES, $v0 RETORNA O NUMERO DE BYTES LIDOS
+        jal     arquivo_leia_codigo           # TENTAR LER 4 BYTES, $v0 RETORNA O NUMERO DE BYTES LIDOS
         bne     $v0, $zero, main_while_codigo   # SE NAO CHEGOU NO FIM DO ARQUIVO, ENTAO PROCESSA REGISTRO
 
-        j fim_leitura_registros                 #SE CHEGOU AO FIM DO ARQUIVO
+        j fim_leitura_codigo                 #SE CHEGOU AO FIM DO ARQUIVO
 
 main_while_codigo:
         # VERIFICA SE O NUMERO DE BYTES LIDOS FOI == 4
         slti    $t0, $v0, 4                 	                # SE UM REGISTRO NAO PODE SER LIDO
-        bne     $t0, $zero,main_if_leitura_registro_erro        # ENCERRA O PROGRAMA
+        bne     $t0, $zero,se_leitura_codigo_erro        # ENCERRA O PROGRAMA
 
         #SE NAO DEU ERRO:
         la      $a0, buffer_leitura                              # $a0 = ENDERECO DO BUFFER DE LEITURA
-        jal     registro_processa                                # PROCESSA O REGISTRO LIDO DO ARQUIVO (DECODIFICADOR)
+        jal     codigo_processa                                # PROCESSA O REGISTRO LIDO DO ARQUIVO (DECODIFICADOR)
         j       main_while                                       # VAI PARA A PROXIMA LEITURA
 
-main_if_leitura_registro_erro:
+se_leitura_codigo_erro:
         la      $a0, str_erro_leitura_registro       # $a0 = ENDERECO DA STRING DE ERRO
         li      $v0, 4                               # $v0 = IMPRIME STRING
         syscall                         
         li      $v0, 1                              # $v0 = 1, VALOR DE RETORNO QUE INDICA QUE DEU ERRO
-        bne     $t0, $zero, fim_leitura_registros   # ENCERRA O PROCEDIMENTO            
+        bne     $t0, $zero, fim_leitura_codigo   # ENCERRA O PROCEDIMENTO            
                 
-fim_leitura_registros:
+fim_leitura_codigo:
         # FECHAMOS O ARQUIVO
         jal     arquivo_fechar          # FECHAMOS O ARQUIVO
 
         lw      $ra, 4($sp)             # RESTAURA ENDERECO DE RETORNO PARA INIT
         lw      $v0, 0($sp)             # $v0 = CODIGO DE RETORNO DO PROCEDIMENTO: 0 = SUCESSO
         addiu   $sp, $sp, 8             # RESTAURA PILHA
-        jr	    $ra                     # RETORNAMOS AO PROCEDIMENTO CHAMADOR (INIT)
+        jr	    $ra                 # RETORNAMOS AO PROCEDIMENTO CHAMADOR (INIT)
 
 imprimeResultR1:
         #ESCREVE CODIGO NO ARQUIVO
