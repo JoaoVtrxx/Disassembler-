@@ -248,14 +248,31 @@ codigo_processa:
         addi $a0, $a0, 4                      # $a0 = $a0 + 4
         sw $a0, 0($t0)                        # endereco_instrucoes = $a0 = endereco_instrucoes + 4
 
+        #RESGATA CODIGO LIDO NO ARQUIVO
         lw $t0, 8($sp)                        # ENDERECO DO BUFFER
         lw $a1, 0($t0)                        # $a1 = CODIGO 4 BYTES LIDO
         la $s5, codigoCompleto                # $s5 = ENDERECO DE "codigoCompleto"     
-        sw $a1, 0($t0)                        # SALVA CODIGO LIDO EM "codigoCompleto"
+        sw $a1, 0($s5)                        # SALVA CODIGO LIDO EM "codigoCompleto"
+
+        #ESCREVE CODIGO NO ARQUIVO
+        move $a0, $a1                           # $a0 = CODIGO COMPLETO
+        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING
+
+        jal converte_hexa_string                # TRADUZ HEXADECIMAL PARA STRING
+        
+        la $t0, descritor_arquivo_escrita       # $t0 = ENDERECO DO DESCRITOR DO ARQUIVO ESCRITA
+        lw $a0, 0($t0)                          # $a0 = VALOR DESCRITOR DO ARQUIVO ESCRITA
+        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING A SER ESCRITA
+        li $a2, 11                              # NUMERO DE BYTES ESCRITOS
+        li $v0, ESCREVE_ARQUIVO                 # $v0 = SERVICO 15: ESCREVER 
+        syscall                                 # CHAMADA AO SISTEMA
+
+        #CARREGA CODIGO COMPLETO
+        lw $a1, 0($s5)                        # CARREGA CODIGO DE "codigoCompleto"
 
    	#PEGAR OPCODE
         jal pega_opcode      
-
+        
         la $s0, instruc_parte_1               # $S0 = ENDERECO DE "instruc_parte_1"
         sw $v0, 0($s0)                        # SALVA OPCODE EM "instruc_parte_1"     
         move $t0, $v0                         # $T0 = OPCODE
@@ -598,18 +615,8 @@ fim_leitura_codigo:
         jr	    $ra                 # RETORNAMOS AO PROCEDIMENTO CHAMADOR (INIT)
 
 imprimeResultR1:
-        #ESCREVE CODIGO NO ARQUIVO
-        move $a0, $a1                           # $a0 = CODIGO COMPLETO
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING
-
-        jal converte_hexa_string                # TRADUZ HEXADECIMAL PARA STRING
-        
         la $t0, descritor_arquivo_escrita       # $t0 = ENDERECO DO DESCRITOR DO ARQUIVO ESCRITA
         lw $a0, 0($t0)                          # $a0 = VALOR DESCRITOR DO ARQUIVO ESCRITA
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING A SER ESCRITA
-        li $a2, 11                              # NUMERO DE BYTES ESCRITOS
-        li $v0, ESCREVE_ARQUIVO                 # $v0 = SERVICO 15: ESCREVER 
-        syscall                                 # CHAMADA AO SISTEMA
 
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)                          # $t0 = ENDERECO DA STRING DE $s0
@@ -658,18 +665,8 @@ imprimeResultR1:
         jr	$ra                             # RETORNA AO PROCESSO CHAMADOR
 
 imprimeResultR2: 
-        #ESCREVE CODIGO NO ARQUIVO
-        move $a0, $a1                           # $a0 = CODIGO COMPLETO
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING
-
-        jal converte_hexa_string                # TRADUZ HEXADECIMAL PARA STRING
-        
         la $t0, descritor_arquivo_escrita       # $t0 = ENDERECO DO DESCRITOR DO ARQUIVO ESCRITA
         lw $a0, 0($t0)                          # $a0 = VALOR DESCRITOR DO ARQUIVO ESCRITA
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING A SER ESCRITA
-        li $a2, 11                              # NUMERO DE BYTES ESCRITOS
-        li $v0, ESCREVE_ARQUIVO                 # $v0 = SERVICO 15: ESCREVER 
-        syscall                                 # CHAMADA AO SISTEMA
 
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)                          # $t0 = ENDERECO DA STRING DE $s0
@@ -722,18 +719,8 @@ imprimeResultR2:
         jr	    $ra                         # RETORNA AO PROCESSO CHAMADOR
         
 imprimeResultR3: 
-        #ESCREVE CODIGO NO ARQUIVO
-        move $a0, $a1                           # $a0 = CODIGO COMPLETO
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING
-
-        jal converte_hexa_string                # TRADUZ HEXADECIMAL PARA STRING
-        
         la $t0, descritor_arquivo_escrita       # $t0 = ENDERECO DO DESCRITOR DO ARQUIVO ESCRITA
         lw $a0, 0($t0)                          # $a0 = VALOR DESCRITOR DO ARQUIVO ESCRITA
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING A SER ESCRITA
-        li $a2, 11                              # NUMERO DE BYTES ESCRITOS
-        li $v0, ESCREVE_ARQUIVO                 # $v0 = SERVICO 15: ESCREVER 
-        syscall                                 # CHAMADA AO SISTEMA
 
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)                          # $t0 = ENDERECO DA STRING DE $s0
@@ -765,18 +752,8 @@ imprimeResultR3:
         addiu   $sp, $sp, 12                    # RESTAURA PILHA
         jr	    $ra                         # RETORNA AO PROCESSO CHAMADOR
 imprimeResultR4: 
-        #ESCREVE CODIGO NO ARQUIVO
-        move $a0, $a1                           # $a0 = CODIGO COMPLETO
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING
-
-        jal converte_hexa_string                # TRADUZ HEXADECIMAL PARA STRING
-        
         la $t0, descritor_arquivo_escrita       # $t0 = ENDERECO DO DESCRITOR DO ARQUIVO ESCRITA
         lw $a0, 0($t0)                          # $a0 = VALOR DESCRITOR DO ARQUIVO ESCRITA
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING A SER ESCRITA
-        li $a2, 11                              # NUMERO DE BYTES ESCRITOS
-        li $v0, ESCREVE_ARQUIVO                 # $v0 = SERVICO 15: ESCREVER 
-        syscall                                 # CHAMADA AO SISTEMA
 
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)                          # $t0 = ENDERECO DA STRING DE $s0
@@ -819,18 +796,8 @@ imprimeResultR4:
         jr	    $ra                         # RETORNA AO PROCESSO CHAMADOR
 
 imprimeResultR5: 
-        #ESCREVE CODIGO NO ARQUIVO
-        move $a0, $a1                           # $a0 = CODIGO COMPLETO
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING
-
-        jal converte_hexa_string                # TRADUZ HEXADECIMAL PARA STRING
-        
         la $t0, descritor_arquivo_escrita       # $t0 = ENDERECO DO DESCRITOR DO ARQUIVO ESCRITA
         lw $a0, 0($t0)                          # $a0 = VALOR DESCRITOR DO ARQUIVO ESCRITA
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING A SER ESCRITA
-        li $a2, 11                              # NUMERO DE BYTES ESCRITOS
-        li $v0, ESCREVE_ARQUIVO                 # $v0 = SERVICO 15: ESCREVER 
-        syscall                                 # CHAMADA AO SISTEMA
 
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)                          # $t0 = ENDERECO DA STRING DE $s0
@@ -854,18 +821,8 @@ imprimeResultR5:
 
 
 imprimeResultR6: 
-        #ESCREVE CODIGO NO ARQUIVO
-        move $a0, $a1                           # $a0 = CODIGO COMPLETO
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING
-
-        jal converte_hexa_string                # TRADUZ HEXADECIMAL PARA STRING
-        
         la $t0, descritor_arquivo_escrita       # $t0 = ENDERECO DO DESCRITOR DO ARQUIVO ESCRITA
         lw $a0, 0($t0)                          # $a0 = VALOR DESCRITOR DO ARQUIVO ESCRITA
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING A SER ESCRITA
-        li $a2, 11                              # NUMERO DE BYTES ESCRITOS
-        li $v0, ESCREVE_ARQUIVO                 # $v0 = SERVICO 15: ESCREVER 
-        syscall                                 # CHAMADA AO SISTEMA
 
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)                          # $t0 = ENDERECO DA STRING DE $s0
@@ -897,18 +854,8 @@ imprimeResultR6:
         addiu   $sp, $sp, 12                    # RESTAURA PILHA
         jr	    $ra                         # RETORNA AO PROCESSO CHAMADOR
 imprimeResultR7: 
-        #ESCREVE CODIGO NO ARQUIVO
-        move $a0, $a1                           # $a0 = CODIGO COMPLETO
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING
-
-        jal converte_hexa_string                # TRADUZ HEXADECIMAL PARA STRING
-        
         la $t0, descritor_arquivo_escrita       # $t0 = ENDERECO DO DESCRITOR DO ARQUIVO ESCRITA
         lw $a0, 0($t0)                          # $a0 = VALOR DESCRITOR DO ARQUIVO ESCRITA
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING A SER ESCRITA
-        li $a2, 11                              # NUMERO DE BYTES ESCRITOS
-        li $v0, ESCREVE_ARQUIVO                 # $v0 = SERVICO 15: ESCREVER 
-        syscall                                 # CHAMADA AO SISTEMA
 
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)                          # $t0 = ENDERECO DA STRING DE $s0
@@ -950,18 +897,8 @@ imprimeResultR7:
         addiu   $sp, $sp, 12                    # RESTAURA PILHA
         jr	    $ra                         # RETORNA AO PROCESSO CHAMADOR
 imprimeResultR8: 
-        #ESCREVE CODIGO NO ARQUIVO
-        move $a0, $a1                           # $a0 = CODIGO COMPLETO
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING
-
-        jal converte_hexa_string                # TRADUZ HEXADECIMAL PARA STRING
-        
         la $t0, descritor_arquivo_escrita       # $t0 = ENDERECO DO DESCRITOR DO ARQUIVO ESCRITA
         lw $a0, 0($t0)                          # $a0 = VALOR DESCRITOR DO ARQUIVO ESCRITA
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING A SER ESCRITA
-        li $a2, 11                              # NUMERO DE BYTES ESCRITOS
-        li $v0, ESCREVE_ARQUIVO                 # $v0 = SERVICO 15: ESCREVER 
-        syscall                                 # CHAMADA AO SISTEMA
 
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)                          # $t0 = ENDERECO DA STRING DE $s0
@@ -1014,18 +951,8 @@ imprimeResultR8:
         jr	    $ra                         # RETORNA AO PROCESSO CHAMADOR
 	
 imprimeResultI1: 
-        #ESCREVE CODIGO NO ARQUIVO
-        move $a0, $a1                           # $a0 = CODIGO COMPLETO
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING
-
-        jal converte_hexa_string                # TRADUZ HEXADECIMAL PARA STRING
-        
         la $t0, descritor_arquivo_escrita       # $t0 = ENDERECO DO DESCRITOR DO ARQUIVO ESCRITA
         lw $a0, 0($t0)                          # $a0 = VALOR DESCRITOR DO ARQUIVO ESCRITA
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING A SER ESCRITA
-        li $a2, 11                              # NUMERO DE BYTES ESCRITOS
-        li $v0, ESCREVE_ARQUIVO                 # $v0 = SERVICO 15: ESCREVER 
-        syscall                                 # CHAMADA AO SISTEMA
 
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)                          # $t0 = ENDERECO DA STRING DE $s0
@@ -1064,18 +991,8 @@ imprimeResultI1:
         jr	    $ra                         # RETORNA AO PROCESSO CHAMADOR
 
 imprimeResultI2:
-        #ESCREVE CODIGO NO ARQUIVO
-        move $a0, $a1                           # $a0 = CODIGO COMPLETO
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING
-
-        jal converte_hexa_string                # TRADUZ HEXADECIMAL PARA STRING
-        
         la $t0, descritor_arquivo_escrita       # $t0 = ENDERECO DO DESCRITOR DO ARQUIVO ESCRITA
         lw $a0, 0($t0)                          # $a0 = VALOR DESCRITOR DO ARQUIVO ESCRITA
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING A SER ESCRITA
-        li $a2, 11                              # NUMERO DE BYTES ESCRITOS
-        li $v0, ESCREVE_ARQUIVO                 # $v0 = SERVICO 15: ESCREVER 
-        syscall                                 # CHAMADA AO SISTEMA
 
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)                          # $t0 = ENDERECO DA STRING DE $s0
@@ -1137,18 +1054,8 @@ imprimeResultI2:
         jr	    $ra                         # RETORNA AO PROCESSO CHAMADOR
 
 imprimeResultI3: 
-        #ESCREVE CODIGO NO ARQUIVO
-        move $a0, $a1                           # $a0 = CODIGO COMPLETO
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING
-
-        jal converte_hexa_string                # TRADUZ HEXADECIMAL PARA STRING
-        
         la $t0, descritor_arquivo_escrita       # $t0 = ENDERECO DO DESCRITOR DO ARQUIVO ESCRITA
         lw $a0, 0($t0)                          # $a0 = VALOR DESCRITOR DO ARQUIVO ESCRITA
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING A SER ESCRITA
-        li $a2, 11                              # NUMERO DE BYTES ESCRITOS
-        li $v0, ESCREVE_ARQUIVO                 # $v0 = SERVICO 15: ESCREVER 
-        syscall                                 # CHAMADA AO SISTEMA
 
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)                          # $t0 = ENDERECO DA STRING DE $s0
@@ -1197,18 +1104,8 @@ imprimeResultI3:
         jr	    $ra                         # RETORNA AO PROCESSO CHAMADOR
 
 imprimeResultI4: 
-        #ESCREVE CODIGO NO ARQUIVO
-        move $a0, $a1                           # $a0 = CODIGO COMPLETO
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING
-
-        jal converte_hexa_string                # TRADUZ HEXADECIMAL PARA STRING
-        
         la $t0, descritor_arquivo_escrita       # $t0 = ENDERECO DO DESCRITOR DO ARQUIVO ESCRITA
         lw $a0, 0($t0)                          # $a0 = VALOR DESCRITOR DO ARQUIVO ESCRITA
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING A SER ESCRITA
-        li $a2, 11                              # NUMERO DE BYTES ESCRITOS
-        li $v0, ESCREVE_ARQUIVO                 # $v0 = SERVICO 15: ESCREVER 
-        syscall                                 # CHAMADA AO SISTEMA
 
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)                          # $t0 = ENDERECO DA STRING DE $s0
@@ -1247,18 +1144,8 @@ imprimeResultI4:
         jr	    $ra                         # RETORNA AO PROCESSO CHAMADOR
 
 imprimeResultI5: 
-        #ESCREVE CODIGO NO ARQUIVO
-        move $a0, $a1                           # $a0 = CODIGO COMPLETO
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING
-
-        jal converte_hexa_string                # TRADUZ HEXADECIMAL PARA STRING
-        
         la $t0, descritor_arquivo_escrita       # $t0 = ENDERECO DO DESCRITOR DO ARQUIVO ESCRITA
         lw $a0, 0($t0)                          # $a0 = VALOR DESCRITOR DO ARQUIVO ESCRITA
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING A SER ESCRITA
-        li $a2, 11                              # NUMERO DE BYTES ESCRITOS
-        li $v0, ESCREVE_ARQUIVO                 # $v0 = SERVICO 15: ESCREVER 
-        syscall                                 # CHAMADA AO SISTEMA
 
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)                          # $t0 = ENDERECO DA STRING DE $s0
@@ -1320,18 +1207,8 @@ imprimeResultI5:
         jr	    $ra                         # RETORNA AO PROCESSO CHAMADOR
 
 imprimeResultJ: 
-        #ESCREVE CODIGO NO ARQUIVO
-        move $a0, $a1                           # $a0 = CODIGO COMPLETO
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING
-
-        jal converte_hexa_string                # TRADUZ HEXADECIMAL PARA STRING
-        
         la $t0, descritor_arquivo_escrita       # $t0 = ENDERECO DO DESCRITOR DO ARQUIVO ESCRITA
         lw $a0, 0($t0)                          # $a0 = VALOR DESCRITOR DO ARQUIVO ESCRITA
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING A SER ESCRITA
-        li $a2, 11                              # NUMERO DE BYTES ESCRITOS
-        li $v0, ESCREVE_ARQUIVO                 # $v0 = SERVICO 15: ESCREVER 
-        syscall                                 # CHAMADA AO SISTEMA
 
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)                          # $t0 = ENDERECO DA STRING DE $s0
@@ -1422,18 +1299,8 @@ calcula_endereco_desvio:
         jr $ra                      # RETORNA AO PROCEDIMENTO CHAMADOR
 
 naoAchou:	
-	#ESCREVE CODIGO NO ARQUIVO
-        move $a0, $a1                           # $a0 = CODIGO COMPLETO
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING
-
-        jal converte_hexa_string                # TRADUZ HEXADECIMAL PARA STRING
-        
-        la $t0, descritor_arquivo_escrita       # $t0 = ENDERECO DO DESCRITOR DO ARQUIVO ESCRITA
+	la $t0, descritor_arquivo_escrita       # $t0 = ENDERECO DO DESCRITOR DO ARQUIVO ESCRITA
         lw $a0, 0($t0)                          # $a0 = VALOR DESCRITOR DO ARQUIVO ESCRITA
-        la $a1, codigo_hexadecimal_string       # ENDERECO DA STRING A SER ESCRITA
-        li $a2, 11                              # NUMERO DE BYTES ESCRITOS
-        li $v0, ESCREVE_ARQUIVO                 # $v0 = SERVICO 15: ESCREVER 
-        syscall                                 # CHAMADA AO SISTEMA
 
         #IMPRIME INSTRUCAO
         lw $t0, 0($s0)                          # $t0 = ENDERECO DA STRING DE $s0
